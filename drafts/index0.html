@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="UTF-8">
+  <title>Fabric.js Paint and Collage App</title>
+  <style>
+    body {
+      background-color: #222;
+      color: #fff;
+      font-family: 'Inter', sans-serif;
+      text-align: center;
+
+    }
+  
+    #canvas-container {
+      border: 1px solid #ccc;
+      width: 800px;
+      height: 600px;
+      margin-bottom: 20px;
+
+      background-color: #fff;
+
+      
+    }
+  
+    /* Toolbar */
+    .toolbar {
+      background-color: #333;
+      padding: 10px;
+      border-radius: 5px;
+      margin-bottom: 20px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+  
+    /* Buttons */
+    button {
+      background-color: #444;
+      color: #fff;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 5px;
+      margin-right: 10px;
+      font-family: 'Inter', sans-serif;
+      cursor: pointer;
+    }
+  
+    /* Input Sliders */
+    input[type="range"] {
+      width: 200px;
+      margin-bottom: 10px;
+    }
+  
+    /* Labels */
+    label {
+      font-family: 'Inter', sans-serif;
+      color: #888;
+      margin-right: 5px;
+    }
+  </style>
+  
+</head>
+
+<body>
+
+
+  <button id="select-mode">SELECT</button>
+  <button id="draw-mode">DRAW</button>
+  <button id="erase-mode">ERASE</button>
+
+  <button id="save-drawing">SAVE </button>
+  <button id="clear-drawing">Clear </button>
+
+  <!-- Brush Width Slider -->
+  <input type="range" id="brush-width" min="1" max="50" value="10" />
+  <label for="brush-width">Brush Width</label>
+
+  <!--  Color Picker -->
+  <input type="color" id="brush-color" value="#000000" />
+  <label for="brush-color">Brush Color</label>
+  <!-- Opacity Slider -->
+  <input type="range" id="brush-opacity" min="0" max="1" step="0.1" value="1" />
+  <label for="brush-opacity">Brush Opacity</label>
+
+  <canvas id="canvas-container"></canvas>
+
+  <!-- include HSL Color Picker library -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/hsl-picker/1.0.0/hsl-picker.min.js"></script>
+  <!-- Include Fabric.js library -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.1/fabric.min.js"></script>
+
+  <!--  Drawing functionality -->
+  <script>
+
+    // Initialize Fabric.js canvas
+    var canvas = new fabric.Canvas('canvas-container', {
+      isDrawingMode: true // Enable drawing mode
+    });
+
+//CANVAS SIZE AND SCALE =======================================================
+    // Set canvas size
+    canvas.setWidth(800);
+    canvas.setHeight(600);
+    // Set canvas scale
+    canvas.setZoom(1);
+
+    //zoom on scroll
+    // canvas.on('mouse:wheel', function(opt) {
+    //   var delta = opt.e.deltaY;
+    //   var zoom = canvas.getZoom();
+    //   zoom *= 0.999 ** delta;
+    //   if (zoom > 20) zoom = 20;
+    //   if (zoom < 0.01) zoom = 0.01;
+    //   canvas.zoomToPoint({ x: opt.e.offsetX, y: opt.e.offsetY }, zoom);
+    //   opt.e.preventDefault();
+    //   opt.e.stopPropagation();
+    // })
+
+
+
+
+//Select Mode =======================================================
+    // Get select mode button HTML element
+    var selectModeButton = document.getElementById('select-mode');
+    // Add click event listener to select mode button
+    selectModeButton.addEventListener('click', function () {
+      // Disable drawing mode
+      canvas.isDrawingMode = false;
+      // Enable selection mode
+      canvas.selection = true;
+    });
+
+
+//Erase Mode =======================================================
+    // Get erase mode button HTML element
+    var eraseModeButton = document.getElementById('erase-mode');
+    // Add click event listener to erase mode button
+    eraseModeButton.addEventListener('click', function () {
+      // Enable drawing mode
+      canvas.isDrawingMode = true;
+      // Disable selection mode
+      canvas.selection = false;
+      // Set brush color to white
+      canvas.freeDrawingBrush.color = 'white';
+    });
+
+
+
+//Draw Mode =======================================================
+    // Get draw mode button HTML element
+    var drawModeButton = document.getElementById('draw-mode');
+    // Add click event listener to draw mode button
+    drawModeButton.addEventListener('click', function () {
+      // Enable drawing mode
+      canvas.isDrawingMode = true;
+      // Disable selection mode
+      canvas.selection = false;
+      // Set brush color and opacity to current picker and opacity slider values, converted to RGBA
+      canvas.freeDrawingBrush.color = hexToRGBA(brushColorPicker.value, brushOpacitySlider.value);
+
+
+    });
+
+
+    //Set initial brush width
+    canvas.freeDrawingBrush.width = 10;
+    // Get brush width slider HTML element
+    var brushWidthSlider = document.getElementById('brush-width');
+    // Update brush width as slider is changed
+    brushWidthSlider.onchange = function () {
+      canvas.freeDrawingBrush.width = parseInt(this.value, 10) || 1;
+      this.previousSibling.innerHTML = this.value;
+    };
+
+    // Update brush width value next to slider
+    brushWidthSlider.previousSibling.innerHTML = brushWidthSlider.value;
+    // Set initial brush opacity to 80%
+    canvas.freeDrawingBrush.strokeOpacity = 1;
+    // Get brush opacity slider HTML element
+    var brushOpacitySlider = document.getElementById('brush-opacity');
+    // Get brush color picker HTML element
+    var brushColorPicker = document.getElementById('brush-color');
+
+    // Update brush opacity and color as either the slider or color picker is changed
+    function updateBrushOpacityAndColor() {
+      var opacity = brushOpacitySlider.value;
+      var color = brushColorPicker.value;
+      var rgbaColor = hexToRGBA(color, opacity);
+      canvas.freeDrawingBrush.strokeOpacity = opacity;
+      canvas.freeDrawingBrush.color = rgbaColor;
+    }
+
+    // Update brush opacity and color on slider input
+    brushOpacitySlider.addEventListener('input', updateBrushOpacityAndColor);
+
+    // Update brush opacity and color on color picker input
+    brushColorPicker.addEventListener('input', updateBrushOpacityAndColor);
+
+
+    // Helper function to convert hex color to RGBA format with opacity
+    function hexToRGBA(hex, opacity) {
+      var hexValue = hex.replace("#", "");
+      var r = parseInt(hexValue.substring(0, 2), 16);
+      var g = parseInt(hexValue.substring(2, 4), 16);
+      var b = parseInt(hexValue.substring(4, 6), 16);
+      return "rgba(" + r + "," + g + "," + b + "," + opacity + ")";
+    }
+
+
+
+
+
+    // Disable default right-click menu on the canvas
+    canvas.on('contextmenu', function (e) {
+      e.preventDefault();
+    });
+
+
+
+    // Clear-drawing button clears the canvas ====================
+    document.getElementById('clear-drawing').addEventListener('click', function () {
+      canvas.clear();
+    });
+
+    // save-drawing button downloads the image as png ====================
+    document.getElementById('save-drawing').addEventListener('click', function () {
+
+      // Get the canvas screenshot as PNG
+      var screenshot = canvas.toDataURL({
+        format: 'png'
+      });
+
+      // Create an <a> tag
+      var downloadLink = document.createElement('a');
+      // Set link's href to point to the DataURL of the image
+      downloadLink.href = screenshot;
+      // Set link's download attribute (name of the file to be downloaded)
+      downloadLink.download = 'my-canvas.png';
+
+      // Append the link to the body
+      document.body.appendChild(downloadLink);
+      // Trigger a click on the element
+      downloadLink.click();
+      // Remove the element from the DOM
+      document.body.removeChild(downloadLink);
+    }
+    );
+
+
+
+
+  </script>
+</body>
+
+</html>
