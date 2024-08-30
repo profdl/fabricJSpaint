@@ -10,10 +10,17 @@
 
 <body>
     <div class="toolbar" id="toolbar">
+        <div id="drag-handle" class="drag-handle"><i class="fas fa-grip-lines"></i></div>
+
         <button id="select-mode"><i class="fas fa-mouse-pointer"></i></button>
         <button id="draw-mode" class="active-tool"><i class="fas fa-pencil-alt"></i></button>
         <button id="erase-mode"><i class="fas fa-eraser"></i></button>
         <button id="line-mode"><i class="fas fa-grip-lines"></i></button>
+        <button id="text-tool"><i class="fas fa-font"></i></button>
+        <input type="text" id="text-input" style="display: none;">
+        <button id="rect-tool"><i class="fas fa-square"></i></button>
+        <button id="circle-tool"><i class="fas fa-circle"></i></button>
+
         <button id="copy-button" class="copy-btn"><i class="fas fa-copy"></i> </button>
         <button id="undo-button"><i class="fas fa-undo"></i> </button>
         <button id="redo-button"><i class="fas fa-redo"></i></button>
@@ -24,7 +31,6 @@
         <button id="flatten-canvas"><i class="fas fa-compress-arrows-alt"></i> Flatten Canvas</button>
         <label for="background-color-picker">Background Color</label>
         <input type="color" id="background-color-picker" value="#ffffff">
-
 
     </div>
 

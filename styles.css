@@ -10,14 +10,25 @@ body {
 }
 
 #canvas-container {
-    border: 0px solid #1f1f1f;
-    background-color: #1f1f1f;
-    display: flex;
-    flex-direction: column;
     position: relative;
+    width: 100vw;
+    /* Full width of the viewport */
+    height: 100vh;
+    /* Full height of the viewport */
+    background-color: #1f1f1f;
 }
 
+canvas {
+    width: 100%;
+    /* Full width within its container */
+    height: 100%;
+    /* Full height within its container */
+}
+
+
 .toolbar {
+    position: absolute;
+    /* Start with absolute positioning */
     background-color: #333;
     padding: 4px 2px;
     border-radius: 8px;
@@ -26,9 +37,15 @@ body {
     justify-content: center;
     align-items: center;
     z-index: 11;
+    top: 20px;
+    /* Initial position */
+    left: 20px;
+    /* Initial position */
 }
 
 #options-toolbar {
+    position: absolute;
+    /* Start with absolute positioning */
     background-color: #333;
     padding: 0 2px;
     border-radius: 8px;
@@ -37,6 +54,10 @@ body {
     justify-content: center;
     align-items: center;
     z-index: 11;
+    top: 70px;
+    /* Initial position relative to the main toolbar */
+    left: 20px;
+    /* Match the initial position of the main toolbar */
 }
 
 .active-tool {
@@ -117,4 +138,37 @@ input[type="color"] {
     box-shadow: 0 0 0px 1000px rgba(0, 0, 0, 0.75);
     outline: 2px solid transparent;
     z-index: 10;
+}
+
+
+button:hover {
+    background-color: #555;
+    color: #fff;
+    border-color: #099AF2;
+}
+
+button:disabled {
+    background-color: #333;
+    color: #666;
+    cursor: not-allowed;
+}
+
+@media (max-width: 600px) {
+
+    #toolbar,
+    #options-toolbar {
+        flex-direction: column;
+    }
+}
+
+
+.drag-handle {
+    cursor: grab;
+    margin-right: 10px;
+    padding: 5px;
+    color: #999;
+}
+
+.drag-handle:active {
+    cursor: grabbing;
 }

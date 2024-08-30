@@ -30,6 +30,7 @@ const canvas = new fabric.Canvas("canvas", {
   backgroundColor: "#fff",
   historyUndo: [],
   historyRedo: [],
+  preserveObjectStacking: true, // Prevent selected objects from being brought to the front
 });
 
 // Set Active Tool
@@ -506,3 +507,229 @@ function changeBackgroundColor(color) {
   canvas.backgroundColor = color;
   canvas.renderAll();
 }
+
+// Zoom and Pan Functionality
+// Enable zooming and panning
+canvas.on("mouse:wheel", function (opt) {
+  var delta = opt.e.deltaY;
+  var zoom = canvas.getZoom();
+  zoom *= 0.999 ** delta;
+  if (zoom > 20) zoom = 20;
+  if (zoom < 0.01) zoom = 0.01;
+  canvas.setZoom(zoom);
+  opt.e.preventDefault();
+  opt.e.stopPropagation();
+});
+
+canvas.on("mouse:down", function (opt) {
+  var evt = opt.e;
+  if (evt.altKey === true) {
+    this.isDragging = true;
+    this.selection = false;
+    this.lastPosX = evt.clientX;
+    this.lastPosY = evt.clientY;
+  }
+});
+
+canvas.on("mouse:move", function (opt) {
+  if (this.isDragging) {
+    var e = opt.e;
+    var vpt = this.viewportTransform;
+    vpt[4] += e.clientX - this.lastPosX;
+    vpt[5] += e.clientY - this.lastPosY;
+    this.requestRenderAll();
+    this.lastPosX = e.clientX;
+    this.lastPosY = e.clientY;
+  }
+});
+
+canvas.on("mouse:up", function (opt) {
+  // on mouse up we want to recalculate new interaction
+  this.setViewportTransform(this.viewportTransform);
+  this.isDragging = false;
+  this.selection = true;
+});
+
+// Text Tool Functionality
+const textToolButton = document.getElementById("text-tool");
+const textInput = document.getElementById("text-input");
+
+textToolButton.addEventListener("click", function () {
+  setActiveTool(textToolButton);
+  textInput.style.display = "inline-block";
+  textInput.focus();
+});
+
+textInput.addEventListener("keypress", function (e) {
+  if (e.key === "Enter") {
+    const text = new fabric.Text(textInput.value, {
+      left: 100,
+      top: 100,
+      fill: brushColorPicker.value,
+      fontSize: 20,
+    });
+    canvas.add(text);
+    textInput.value = "";
+    textInput.style.display = "none";
+  }
+});
+
+//Shape Tool Functionality
+const rectToolButton = document.getElementById("rect-tool");
+const circleToolButton = document.getElementById("circle-tool");
+
+rectToolButton.addEventListener("click", function () {
+  setActiveTool(rectToolButton);
+  const rect = new fabric.Rect({
+    left: 100,
+    top: 100,
+    fill: brushColorPicker.value,
+    width: 50,
+    height: 50,
+  });
+  canvas.add(rect);
+});
+
+circleToolButton.addEventListener("click", function () {
+  setActiveTool(circleToolButton);
+  const circle = new fabric.Circle({
+    left: 150,
+    top: 150,
+    fill: brushColorPicker.value,
+    radius: 30,
+  });
+  canvas.add(circle);
+});
+
+// Arrange Elements Functionality
+const bringForwardButton = document.createElement("button");
+bringForwardButton.innerHTML = '<i class="fas fa-arrow-up"></i> Bring Forward';
+document.getElementById("toolbar").appendChild(bringForwardButton);
+
+const sendBackwardButton = document.createElement("button");
+sendBackwardButton.innerHTML =
+  '<i class="fas fa-arrow-down"></i> Send Backward';
+document.getElementById("toolbar").appendChild(sendBackwardButton);
+
+const bringToFrontButton = document.createElement("button");
+bringToFrontButton.innerHTML =
+  '<i class="fas fa-angle-double-up"></i> Bring to Front';
+document.getElementById("toolbar").appendChild(bringToFrontButton);
+
+const sendToBackButton = document.createElement("button");
+sendToBackButton.innerHTML =
+  '<i class="fas fa-angle-double-down"></i> Send to Back';
+document.getElementById("toolbar").appendChild(sendToBackButton);
+
+// Bring Forward Button Functionality
+bringForwardButton.addEventListener("click", function () {
+  const activeObject = canvas.getActiveObject();
+  if (activeObject) {
+    canvas.bringForward(activeObject);
+  }
+});
+
+// Send Backward Button Functionality
+sendBackwardButton.addEventListener("click", function () {
+  const activeObject = canvas.getActiveObject();
+  if (activeObject) {
+    activeObject.set({ opacity: 0.5 }); // Optional: Change opacity for feedback
+    canvas.sendBackwards(activeObject, true);
+    canvas.renderAll(); // Keep the object selected after moving
+    setTimeout(() => {
+      activeObject.set({ opacity: 1 }); // Reset opacity after the move
+      canvas.renderAll();
+    }, 200); // Timeout for visual feedback
+  }
+});
+
+// Bring to Front Button Functionality
+bringToFrontButton.addEventListener("click", function () {
+  const activeObject = canvas.getActiveObject();
+  if (activeObject) {
+    canvas.bringToFront(activeObject); // Move the object to the front of the stack
+    console.log("Object brought to the front of the stack.");
+  }
+});
+
+// Send to Back Button Functionality
+sendToBackButton.addEventListener("click", function () {
+  const activeObject = canvas.getActiveObject();
+  if (activeObject) {
+    canvas.sendToBack(activeObject); // Move the object to the back of the stack
+    console.log("Object sent to the back of the stack.");
+  }
+});
+
+////////////////
+
+//Auto-save Functionality
+window.addEventListener("beforeunload", function () {
+  const canvasState = JSON.stringify(canvas.toJSON());
+  localStorage.setItem("canvasState", canvasState);
+});
+
+window.addEventListener("load", function () {
+  const savedState = localStorage.getItem("canvasState");
+  if (savedState) {
+    canvas.loadFromJSON(savedState, function () {
+      canvas.renderAll();
+    });
+  }
+});
+
+//Move toolbar functionality
+const toolbar = document.getElementById("toolbar");
+const optionsToolbar = document.getElementById("options-toolbar");
+const dragHandle = document.getElementById("drag-handle");
+
+let isDragging = false;
+let startX, startY, initialLeft, initialTop;
+
+// Function to handle the start of dragging
+dragHandle.addEventListener("mousedown", function (e) {
+  isDragging = true;
+  startX = e.clientX;
+  startY = e.clientY;
+  initialLeft = toolbar.offsetLeft;
+  initialTop = toolbar.offsetTop;
+  document.body.style.userSelect = "none"; // Prevent text selection while dragging
+});
+
+// Function to handle the dragging movement
+document.addEventListener("mousemove", function (e) {
+  if (isDragging) {
+    const dx = e.clientX - startX;
+    const dy = e.clientY - startY;
+
+    toolbar.style.position = "absolute";
+    toolbar.style.left = `${initialLeft + dx}px`;
+    toolbar.style.top = `${initialTop + dy}px`;
+
+    // Move the options toolbar along with the main toolbar
+    optionsToolbar.style.position = "absolute";
+    optionsToolbar.style.left = `${initialLeft + dx}px`;
+    optionsToolbar.style.top = `${initialTop + dy + toolbar.offsetHeight}px`;
+  }
+});
+
+// Function to handle the end of dragging
+document.addEventListener("mouseup", function () {
+  if (isDragging) {
+    isDragging = false;
+    document.body.style.userSelect = "auto"; // Re-enable text selection
+  }
+});
+
+//Canvas Resize Functionality
+function resizeCanvas() {
+  canvas.setWidth(window.innerWidth);
+  canvas.setHeight(window.innerHeight);
+  canvas.calcOffset(); // Recalculate the canvas offset
+}
+
+// Call resizeCanvas on window resize
+window.addEventListener("resize", resizeCanvas);
+
+// Initial canvas resize to fill the window
+resizeCanvas();
