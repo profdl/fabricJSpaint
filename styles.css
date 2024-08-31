@@ -1,3 +1,4 @@
+/* Global Styles */
 body {
     background-color: #222;
     color: #fff;
@@ -9,6 +10,7 @@ body {
     justify-content: center;
 }
 
+/* Canvas Container */
 #canvas-container {
     position: relative;
     width: 100vw;
@@ -25,121 +27,55 @@ canvas {
     /* Full height within its container */
 }
 
-
+/* Toolbar Styles */
 .toolbar {
     position: absolute;
-    /* Start with absolute positioning */
     background-color: #333;
     padding: 4px 2px;
     border-radius: 8px;
-    margin-top: 12px;
     display: flex;
+    flex-wrap: wrap;
     justify-content: center;
     align-items: center;
     z-index: 11;
-    top: 20px;
-    /* Initial position */
-    left: 20px;
-    /* Initial position */
+    top: 10px;
+    left: 10px;
+    cursor: grab;
 }
+
 
 #options-toolbar {
     position: absolute;
-    /* Start with absolute positioning */
     background-color: #333;
-    padding: 0 2px;
+    padding: 2px 4px;
     border-radius: 8px;
-    margin: 6px 0 12px;
+    margin: 4px 0 8px;
     display: flex;
     justify-content: center;
     align-items: center;
     z-index: 11;
-    top: 70px;
-    /* Initial position relative to the main toolbar */
-    left: 20px;
-    /* Match the initial position of the main toolbar */
+    top: 60px;
+    left: 10px;
 }
 
-.active-tool {
-    background-color: #000000;
-    color: #099AF2;
-    border: 1px solid #099AF2;
-}
 
+/* Button Styles */
 button {
     background-color: #444;
     color: #999;
     border: 1px solid #555;
-    padding: 4px 6px;
+    padding: 6px 8px;
+    /* Increased padding for larger button size */
     border-radius: 5px;
-    margin-right: 10px;
+    margin: 4px;
+    /* Increased margin for spacing */
     font-family: 'Inter', sans-serif;
     cursor: pointer;
-    min-width: 24px;
     font-size: 12px;
+    /* Slightly larger font size for readability */
     text-transform: uppercase;
     font-weight: semi-bold;
 }
-
-.copy-btn {
-    margin-left: 24px;
-}
-
-input[type="range"] {
-    width: 120px;
-    appearance: none;
-    background-color: black;
-    height: 2px;
-}
-
-input[type="range"]::-webkit-slider-thumb {
-    appearance: none;
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background-color: #fff;
-    cursor: pointer;
-}
-
-label {
-    font-family: 'Inter', sans-serif;
-    color: #888;
-    margin: 0 12px;
-    text-transform: uppercase;
-    font-size: 10px;
-    font-weight: bold;
-}
-
-input[type="color"] {
-    width: 40px;
-    height: 30px;
-    border: 0;
-    background-color: #333;
-    margin: 0 12px;
-}
-
-.overlay {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    pointer-events: none;
-}
-
-.transparent-rectangle {
-    width: 512px;
-    height: 512px;
-    background-color: transparent;
-    pointer-events: none;
-    box-shadow: 0 0 0px 1000px rgba(0, 0, 0, 0.75);
-    outline: 2px solid transparent;
-    z-index: 10;
-}
-
 
 button:hover {
     background-color: #555;
@@ -153,22 +89,90 @@ button:disabled {
     cursor: not-allowed;
 }
 
-@media (max-width: 600px) {
-
-    #toolbar,
-    #options-toolbar {
-        flex-direction: column;
-    }
+.active-tool {
+    background-color: #000000;
+    color: #099AF2;
+    border: 1px solid #099AF2;
 }
 
 
+/* Input Styles */
+input[type="range"] {
+    width: 100px;
+    height: 25px;
+    border: 0;
+    background-color: #333;
+    margin: 4px 6px;
+}
+
+input[type="color"] {
+    width: 25px;
+    height: 25px;
+    border: 0;
+    background-color: #333;
+    margin: 4px 6px;
+}
+
+
+input[type="range"] {
+    appearance: none;
+    height: 2px;
+    background-color: black;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+    appearance: none;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background-color: #fff;
+    cursor: pointer;
+}
+
+/* Label Styles */
+label {
+    font-family: 'Inter', sans-serif;
+    color: #888;
+    margin: 0 8px;
+    text-transform: uppercase;
+    font-size: 10px;
+    font-weight: bold;
+}
+
+/* Drag Handle */
 .drag-handle {
     cursor: grab;
-    margin-right: 10px;
-    padding: 5px;
+    margin-right: 6px;
+    padding: 2px;
     color: #999;
 }
 
 .drag-handle:active {
     cursor: grabbing;
+}
+
+/* Overlay and Transparency */
+.overlay,
+.transparent-rectangle {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+}
+
+.transparent-rectangle {
+    background-color: transparent;
+    box-shadow: 0 0 0px 1000px rgba(0, 0, 0, 0.75);
+    outline: 2px solid transparent;
+    z-index: 10;
+}
+
+/* Media Query for Smaller Screens */
+@media (max-width: 600px) {
+
+    #toolbar,
+    #options-toolbar {
+        flex-direction: row;
+        /* Keep in one line for smaller screens */
+    }
 }

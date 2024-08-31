@@ -33,14 +33,16 @@ const canvas = new fabric.Canvas("canvas", {
   preserveObjectStacking: true, // Prevent selected objects from being brought to the front
 });
 
-// Set Active Tool
+// Function to set the active tool and update the UI
 function setActiveTool(button) {
   const activeToolClass = "active-tool";
   const activeButton = document.querySelector("." + activeToolClass);
+
   if (activeButton) {
-    activeButton.classList.remove(activeToolClass);
+    activeButton.classList.remove(activeToolClass); // Remove active state from the currently active button
   }
-  button.classList.add(activeToolClass);
+
+  button.classList.add(activeToolClass); // Add active state to the selected button
 }
 
 // OPACITY & COLOR ===========================================
@@ -66,7 +68,8 @@ function hexToRGBA(hex, opacity) {
 }
 
 // EVENT LISTENERS ===========================================
-selectModeButton.addEventListener("click", function () {
+
+document.getElementById("select-mode").addEventListener("click", function () {
   isLineModeActive = false;
   canvas.isDrawingMode = false;
   canvas.selection = true;
@@ -77,7 +80,15 @@ selectModeButton.addEventListener("click", function () {
   });
 });
 
-eraseModeButton.addEventListener("click", function () {
+document.getElementById("draw-mode").addEventListener("click", function () {
+  isLineModeActive = false;
+  updateBrushOpacityAndColor();
+  canvas.isDrawingMode = true;
+  canvas.selection = false;
+  setActiveTool(drawModeButton);
+});
+
+document.getElementById("erase-mode").addEventListener("click", function () {
   canvas.isDrawingMode = true;
   canvas.selection = false;
   canvas.freeDrawingBrush.color = "white";
@@ -88,29 +99,9 @@ eraseModeButton.addEventListener("click", function () {
   isLineModeActive = false;
 });
 
-drawModeButton.addEventListener("click", function () {
-  isLineModeActive = false;
-  updateBrushOpacityAndColor();
-  canvas.isDrawingMode = true;
-  canvas.selection = false;
-  setActiveTool(drawModeButton);
-});
-
-brushWidthSlider.addEventListener("input", function () {
-  const size = parseInt(this.value, 10) || 1;
-  canvas.freeDrawingBrush.width = size;
-  brushSizeLabel.textContent = size;
-});
-
-opacitySizeLabel.textContent = brushOpacitySlider.value;
-canvas.freeDrawingBrush.width = defaultBrushSize;
-brushWidthSlider.value = defaultBrushSize;
-brushSizeLabel.textContent = defaultBrushSize;
-
-lineModeButton.addEventListener("click", function () {
+document.getElementById("line-mode").addEventListener("click", function () {
   isLineModeActive = !isLineModeActive;
   setActiveTool(lineModeButton);
-
   if (isLineModeActive) {
     canvas.isDrawingMode = false;
     canvas.selection = false;
@@ -126,14 +117,43 @@ lineModeButton.addEventListener("click", function () {
   }
 });
 
+brushWidthSlider.addEventListener("input", function () {
+  const size = parseInt(this.value, 10) || 1;
+  canvas.freeDrawingBrush.width = size;
+  brushSizeLabel.textContent = size;
+});
+
+opacitySizeLabel.textContent = brushOpacitySlider.value;
+canvas.freeDrawingBrush.width = defaultBrushSize;
+brushWidthSlider.value = defaultBrushSize;
+brushSizeLabel.textContent = defaultBrushSize;
+
+//=========================================================
+// Event Listener for Line Tool Button
+lineModeButton.addEventListener("click", function () {
+  isLineModeActive = true; // Set the line tool as active
+  canvas.isDrawingMode = false; // Disable free drawing mode
+  canvas.selection = false; // Disable selection of objects
+
+  // Deselect other objects on the canvas when the line tool is active
+  canvas.forEachObject(function (obj) {
+    obj.selectable = false;
+  });
+
+  setActiveTool(lineModeButton); // Set the line tool button as active
+});
+
+// Handle mouse events for line drawing
 canvas.on("mouse:down", function (options) {
   if (isLineModeActive) {
-    startPoint = canvas.getPointer(options.e);
-    var points = [startPoint.x, startPoint.y, startPoint.x, startPoint.y];
+    startPoint = canvas.getPointer(options.e); // Get the starting point
+    const points = [startPoint.x, startPoint.y, startPoint.x, startPoint.y];
     const color = brushColorPicker.value;
     const opacity = brushOpacitySlider.value;
     const rgbaColor = hexToRGBA(color, opacity);
     const size = parseInt(brushWidthSlider.value, 10) || 1;
+
+    // Initialize the line
     lineInProgress = new fabric.Line(points, {
       strokeWidth: size,
       fill: rgbaColor,
@@ -147,15 +167,26 @@ canvas.on("mouse:down", function (options) {
   }
 });
 
-canvas.on("mouse:up", function (options) {
-  if (isLineModeActive) {
+canvas.on("mouse:move", function (options) {
+  if (isLineModeActive && lineInProgress) {
+    const pointer = canvas.getPointer(options.e);
+    lineInProgress.set({ x2: pointer.x, y2: pointer.y });
+    canvas.renderAll();
+  }
+});
+
+canvas.on("mouse:up", function () {
+  if (isLineModeActive && lineInProgress) {
     const color = brushColorPicker.value;
     const opacity = brushOpacitySlider.value;
     const rgbaColor = hexToRGBA(color, opacity);
     const size = parseInt(brushWidthSlider.value, 10) || 1;
-    var pointer = canvas.getPointer(options.e);
-    var points = [startPoint.x, startPoint.y, pointer.x, pointer.y];
-    var line = new fabric.Line(points, {
+
+    const endPoint = canvas.getPointer(event.e);
+    const points = [startPoint.x, startPoint.y, endPoint.x, endPoint.y];
+
+    // Finalize the line and add it to the canvas
+    const line = new fabric.Line(points, {
       strokeWidth: size,
       fill: rgbaColor,
       stroke: rgbaColor,
@@ -164,20 +195,13 @@ canvas.on("mouse:up", function (options) {
       selectable: false,
       evented: false,
     });
+
     canvas.remove(lineInProgress);
     canvas.add(line);
-    canvas.renderAll();
     lineInProgress = null;
-    lines.push(line);
-  }
-  updateCanvasHistory();
-});
-
-canvas.on("mouse:move", function (options) {
-  if (isLineModeActive && lineInProgress) {
-    var pointer = canvas.getPointer(options.e);
-    lineInProgress.set({ x2: pointer.x, y2: pointer.y });
+    lines.push(line); // Store line in the array
     canvas.renderAll();
+    updateCanvasHistory(); // Update the canvas history for undo/redo
   }
 });
 
@@ -602,24 +626,11 @@ circleToolButton.addEventListener("click", function () {
 });
 
 // Arrange Elements Functionality
-const bringForwardButton = document.createElement("button");
-bringForwardButton.innerHTML = '<i class="fas fa-arrow-up"></i> Bring Forward';
-document.getElementById("toolbar").appendChild(bringForwardButton);
-
-const sendBackwardButton = document.createElement("button");
-sendBackwardButton.innerHTML =
-  '<i class="fas fa-arrow-down"></i> Send Backward';
-document.getElementById("toolbar").appendChild(sendBackwardButton);
-
-const bringToFrontButton = document.createElement("button");
-bringToFrontButton.innerHTML =
-  '<i class="fas fa-angle-double-up"></i> Bring to Front';
-document.getElementById("toolbar").appendChild(bringToFrontButton);
-
-const sendToBackButton = document.createElement("button");
-sendToBackButton.innerHTML =
-  '<i class="fas fa-angle-double-down"></i> Send to Back';
-document.getElementById("toolbar").appendChild(sendToBackButton);
+// Bring Forward and Send Backward Buttons
+const bringForwardButton = document.getElementById("bring-forward-button");
+const sendBackwardButton = document.getElementById("send-backward-button");
+const bringToFrontButton = document.getElementById("bring-to-front-button");
+const sendToBackButton = document.getElementById("send-to-back-button");
 
 // Bring Forward Button Functionality
 bringForwardButton.addEventListener("click", function () {
@@ -661,7 +672,7 @@ sendToBackButton.addEventListener("click", function () {
   }
 });
 
-////////////////
+//===========================================================
 
 //Auto-save Functionality
 window.addEventListener("beforeunload", function () {
@@ -678,7 +689,9 @@ window.addEventListener("load", function () {
   }
 });
 
-//Move toolbar functionality
+//===========================================================
+
+// Drag Functionality for Toolbars
 const toolbar = document.getElementById("toolbar");
 const optionsToolbar = document.getElementById("options-toolbar");
 const dragHandle = document.getElementById("drag-handle");
@@ -694,6 +707,13 @@ dragHandle.addEventListener("mousedown", function (e) {
   initialLeft = toolbar.offsetLeft;
   initialTop = toolbar.offsetTop;
   document.body.style.userSelect = "none"; // Prevent text selection while dragging
+
+  // Debugging logs to check initial values
+  console.log("Dragging started at:", startX, startY);
+  console.log("Initial positions:", initialLeft, initialTop);
+
+  e.stopPropagation(); // Prevent other events from interfering
+  e.preventDefault(); // Prevent default behavior
 });
 
 // Function to handle the dragging movement
@@ -702,14 +722,18 @@ document.addEventListener("mousemove", function (e) {
     const dx = e.clientX - startX;
     const dy = e.clientY - startY;
 
-    toolbar.style.position = "absolute";
+    // Update toolbar positions
     toolbar.style.left = `${initialLeft + dx}px`;
     toolbar.style.top = `${initialTop + dy}px`;
 
     // Move the options toolbar along with the main toolbar
-    optionsToolbar.style.position = "absolute";
     optionsToolbar.style.left = `${initialLeft + dx}px`;
-    optionsToolbar.style.top = `${initialTop + dy + toolbar.offsetHeight}px`;
+    optionsToolbar.style.top = `${
+      initialTop + dy + toolbar.offsetHeight + 10
+    }px`; // Adjust spacing
+
+    // Debugging log for movement tracking
+    console.log("Dragging moved to:", e.clientX, e.clientY);
   }
 });
 
@@ -718,8 +742,11 @@ document.addEventListener("mouseup", function () {
   if (isDragging) {
     isDragging = false;
     document.body.style.userSelect = "auto"; // Re-enable text selection
+    console.log("Dragging ended");
   }
 });
+
+//=============================================
 
 //Canvas Resize Functionality
 function resizeCanvas() {

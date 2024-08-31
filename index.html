@@ -11,27 +11,27 @@
 <body>
     <div class="toolbar" id="toolbar">
         <div id="drag-handle" class="drag-handle"><i class="fas fa-grip-lines"></i></div>
-
-        <button id="select-mode"><i class="fas fa-mouse-pointer"></i></button>
-        <button id="draw-mode" class="active-tool"><i class="fas fa-pencil-alt"></i></button>
-        <button id="erase-mode"><i class="fas fa-eraser"></i></button>
-        <button id="line-mode"><i class="fas fa-grip-lines"></i></button>
-        <button id="text-tool"><i class="fas fa-font"></i></button>
-        <input type="text" id="text-input" style="display: none;">
-        <button id="rect-tool"><i class="fas fa-square"></i></button>
-        <button id="circle-tool"><i class="fas fa-circle"></i></button>
-
-        <button id="copy-button" class="copy-btn"><i class="fas fa-copy"></i> </button>
-        <button id="undo-button"><i class="fas fa-undo"></i> </button>
-        <button id="redo-button"><i class="fas fa-redo"></i></button>
-        <button id="clear-drawing"><i class="fas fa-trash-alt"></i></button>
-        <button id="save-image"><i class="fas fa-download"></i></button>
-        <button id="add-image"><i class="fas fa-image"></i></button>
+        <button id="select-mode" title="Select Mode"><i class="fas fa-mouse-pointer"></i></button>
+        <button id="draw-mode" class="active-tool" title="Draw Mode"><i class="fas fa-pencil-alt"></i></button>
+        <button id="erase-mode" title="Erase Mode"><i class="fas fa-eraser"></i></button>
+        <button id="line-mode" title="Line Mode"><i class="fas fa-grip-lines"></i></button>
+        <button id="text-tool" title="Text Tool"><i class="fas fa-font"></i></button>
+        <input type="text" id="text-input" style="display:none;" placeholder="Enter text here">
+        <button id="rect-tool" title="Rectangle Tool"><i class="fas fa-square"></i></button>
+        <button id="circle-tool" title="Circle Tool"><i class="fas fa-circle"></i></button>
+        <button id="copy-button" title="Copy" class="copy-btn"><i class="fas fa-copy"></i></button>
+        <button id="undo-button" title="Undo"><i class="fas fa-undo"></i></button>
+        <button id="redo-button" title="Redo"><i class="fas fa-redo"></i></button>
+        <button id="clear-drawing" title="Clear Drawing"><i class="fas fa-trash-alt"></i></button>
+        <button id="save-image" title="Save Image"><i class="fas fa-download"></i></button>
+        <button id="add-image" title="Add Image"><i class="fas fa-image"></i></button>
         <input type="file" id="image-upload" accept="image/*" style="display:none;">
-        <button id="flatten-canvas"><i class="fas fa-compress-arrows-alt"></i> Flatten Canvas</button>
-        <label for="background-color-picker">Background Color</label>
-        <input type="color" id="background-color-picker" value="#ffffff">
-
+        <button id="flatten-canvas" title="Flatten Canvas"><i class="fas fa-compress-arrows-alt"></i></button>
+        <input type="color" id="background-color-picker" title="Background Color" value="#ffffff">
+        <button id="bring-forward-button" title="Bring Forward"><i class="fas fa-arrow-up"></i></button>
+        <button id="send-backward-button" title="Send Backward"><i class="fas fa-arrow-down"></i></button>
+        <button id="bring-to-front-button" title="Bring to Front"><i class="fas fa-angle-double-up"></i></button>
+        <button id="send-to-back-button" title="Send to Back"><i class="fas fa-angle-double-down"></i></button>
     </div>
 
     <div class="toolbar" id="options-toolbar">
