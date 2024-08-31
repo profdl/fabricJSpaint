@@ -1,4 +1,5 @@
 // ELEMENTS & VARIABLES ======================================
+// DOM elements for various controls
 const canvasContainer = document.getElementById("canvas-container");
 const selectModeButton = document.getElementById("select-mode");
 const eraseModeButton = document.getElementById("erase-mode");
@@ -14,15 +15,16 @@ const redoButton = document.getElementById("redo-button");
 const clearDrawingButton = document.getElementById("clear-drawing");
 const copyButton = document.getElementById("copy-button");
 const addImageButton = document.getElementById("add-image");
-let lines = [];
 
-// Variables
+// Application state variables
 const defaultBrushSize = 7;
-let isLineModeActive = false;
-let startPoint = { x: 0, y: 0 };
-let lineInProgress = null;
+let isLineModeActive = false; // To track if the line mode is active
+let startPoint = { x: 0, y: 0 }; // Start point for line drawing
+let lineInProgress = null; // Current line being drawn
+let lines = []; // Array to store all drawn lines
 
-// CANVAS =========================================
+// CANVAS SETUP ==============================================
+// Initialize Fabric.js canvas with default settings
 const canvas = new fabric.Canvas("canvas", {
   isDrawingMode: true,
   width: 912,
@@ -30,26 +32,33 @@ const canvas = new fabric.Canvas("canvas", {
   backgroundColor: "#fff",
   historyUndo: [],
   historyRedo: [],
-  preserveObjectStacking: true, // Prevent selected objects from being brought to the front
+  preserveObjectStacking: true, // Keep selected objects from being automatically brought to the front
 });
 
-// Function to set the active tool and update the UI
+// UTILITY FUNCTIONS =========================================
+
+// Function to update the active tool button's UI state
 function setActiveTool(button) {
   const activeToolClass = "active-tool";
   const activeButton = document.querySelector("." + activeToolClass);
 
   if (activeButton) {
-    activeButton.classList.remove(activeToolClass); // Remove active state from the currently active button
+    activeButton.classList.remove(activeToolClass); // Remove active state from any currently active button
   }
 
   button.classList.add(activeToolClass); // Add active state to the selected button
 }
 
-// OPACITY & COLOR ===========================================
-brushOpacitySlider.addEventListener("input", updateBrushOpacityAndColor);
-brushColorPicker.addEventListener("input", updateBrushOpacityAndColor);
-updateBrushOpacityAndColor();
+// Function to convert a hex color to an RGBA format
+function hexToRGBA(hex, opacity) {
+  const hexValue = hex.replace("#", "");
+  const r = parseInt(hexValue.substring(0, 2), 16);
+  const g = parseInt(hexValue.substring(2, 4), 16);
+  const b = parseInt(hexValue.substring(4, 6), 16);
+  return `rgba(${r},${g},${b},${opacity})`;
+}
 
+// Function to update brush opacity and color
 function updateBrushOpacityAndColor() {
   const opacity = brushOpacitySlider.value;
   const color = brushColorPicker.value;
@@ -59,17 +68,13 @@ function updateBrushOpacityAndColor() {
   opacitySizeLabel.textContent = opacity;
 }
 
-function hexToRGBA(hex, opacity) {
-  const hexValue = hex.replace("#", "");
-  const r = parseInt(hexValue.substring(0, 2), 16);
-  const g = parseInt(hexValue.substring(2, 4), 16);
-  const b = parseInt(hexValue.substring(4, 6), 16);
-  return `rgba(${r},${g},${b},${opacity})`;
-}
+// Initialize brush settings
+updateBrushOpacityAndColor();
 
 // EVENT LISTENERS ===========================================
 
-document.getElementById("select-mode").addEventListener("click", function () {
+// Mode Change Event Listeners
+selectModeButton.addEventListener("click", function () {
   isLineModeActive = false;
   canvas.isDrawingMode = false;
   canvas.selection = true;
@@ -80,7 +85,7 @@ document.getElementById("select-mode").addEventListener("click", function () {
   });
 });
 
-document.getElementById("draw-mode").addEventListener("click", function () {
+drawModeButton.addEventListener("click", function () {
   isLineModeActive = false;
   updateBrushOpacityAndColor();
   canvas.isDrawingMode = true;
@@ -88,7 +93,8 @@ document.getElementById("draw-mode").addEventListener("click", function () {
   setActiveTool(drawModeButton);
 });
 
-document.getElementById("erase-mode").addEventListener("click", function () {
+eraseModeButton.addEventListener("click", function () {
+  isLineModeActive = false;
   canvas.isDrawingMode = true;
   canvas.selection = false;
   canvas.freeDrawingBrush.color = "white";
@@ -96,11 +102,10 @@ document.getElementById("erase-mode").addEventListener("click", function () {
   canvas.forEachObject(function (obj) {
     obj.selectable = false;
   });
-  isLineModeActive = false;
 });
 
-document.getElementById("line-mode").addEventListener("click", function () {
-  isLineModeActive = !isLineModeActive;
+lineModeButton.addEventListener("click", function () {
+  isLineModeActive = !isLineModeActive; // Toggle line mode
   setActiveTool(lineModeButton);
   if (isLineModeActive) {
     canvas.isDrawingMode = false;
@@ -117,43 +122,33 @@ document.getElementById("line-mode").addEventListener("click", function () {
   }
 });
 
+// Brush Width Change Listener
 brushWidthSlider.addEventListener("input", function () {
   const size = parseInt(this.value, 10) || 1;
   canvas.freeDrawingBrush.width = size;
   brushSizeLabel.textContent = size;
 });
 
+// INITIALIZE UI =============================================
+// Set initial values for sliders and labels
 opacitySizeLabel.textContent = brushOpacitySlider.value;
 canvas.freeDrawingBrush.width = defaultBrushSize;
 brushWidthSlider.value = defaultBrushSize;
 brushSizeLabel.textContent = defaultBrushSize;
 
-//=========================================================
-// Event Listener for Line Tool Button
-lineModeButton.addEventListener("click", function () {
-  isLineModeActive = true; // Set the line tool as active
-  canvas.isDrawingMode = false; // Disable free drawing mode
-  canvas.selection = false; // Disable selection of objects
+// LINE DRAWING HANDLING ======================================
 
-  // Deselect other objects on the canvas when the line tool is active
-  canvas.forEachObject(function (obj) {
-    obj.selectable = false;
-  });
-
-  setActiveTool(lineModeButton); // Set the line tool button as active
-});
-
-// Handle mouse events for line drawing
+// Handle mouse events for line drawing on canvas
 canvas.on("mouse:down", function (options) {
   if (isLineModeActive) {
-    startPoint = canvas.getPointer(options.e); // Get the starting point
+    startPoint = canvas.getPointer(options.e); // Get starting point for line
     const points = [startPoint.x, startPoint.y, startPoint.x, startPoint.y];
     const color = brushColorPicker.value;
     const opacity = brushOpacitySlider.value;
     const rgbaColor = hexToRGBA(color, opacity);
     const size = parseInt(brushWidthSlider.value, 10) || 1;
 
-    // Initialize the line
+    // Create a new line
     lineInProgress = new fabric.Line(points, {
       strokeWidth: size,
       fill: rgbaColor,
@@ -181,11 +176,10 @@ canvas.on("mouse:up", function () {
     const opacity = brushOpacitySlider.value;
     const rgbaColor = hexToRGBA(color, opacity);
     const size = parseInt(brushWidthSlider.value, 10) || 1;
-
     const endPoint = canvas.getPointer(event.e);
     const points = [startPoint.x, startPoint.y, endPoint.x, endPoint.y];
 
-    // Finalize the line and add it to the canvas
+    // Finalize and add the line to the canvas
     const line = new fabric.Line(points, {
       strokeWidth: size,
       fill: rgbaColor,
@@ -199,12 +193,13 @@ canvas.on("mouse:up", function () {
     canvas.remove(lineInProgress);
     canvas.add(line);
     lineInProgress = null;
-    lines.push(line); // Store line in the array
+    lines.push(line); // Store line for future reference
     canvas.renderAll();
-    updateCanvasHistory(); // Update the canvas history for undo/redo
+    updateCanvasHistory(); // Update the history for undo/redo functionality
   }
 });
 
+//==========================================================
 // HISTORY ===========================================
 
 // Initialize history stacks
@@ -349,12 +344,22 @@ function Paste() {
 
 // Add event listener for keyboard shortcuts
 document.addEventListener("keydown", function (e) {
-  const activeObject = canvas.getActiveObject(); // Get the currently selected object
+  const activeObject = canvas.getActiveObject(); // Get the currently selected object or group
 
   // Detect the Delete key or Command-X (cut) key combination
   if ((e.key === "Delete" || e.key === "Backspace") && activeObject) {
     e.preventDefault();
-    Cut();
+    if (activeObject.type === "activeSelection") {
+      // If multiple objects are selected, remove all of them
+      activeObject.forEachObject(function (obj) {
+        canvas.remove(obj);
+      });
+      canvas.discardActiveObject(); // Deselect all objects
+      canvas.renderAll();
+    } else {
+      // If a single object is selected, remove it
+      canvas.remove(activeObject);
+    }
   } else if (
     e.key.toLowerCase() === "x" &&
     (e.ctrlKey || e.metaKey) &&
@@ -415,6 +420,7 @@ canvas.on("object:modified", function (e) {
   }
 });
 
+// =======================================================
 // Save as PNG
 // Save Image button event listener
 document.getElementById("save-image").addEventListener("click", function () {
@@ -586,7 +592,8 @@ textToolButton.addEventListener("click", function () {
 
 textInput.addEventListener("keypress", function (e) {
   if (e.key === "Enter") {
-    const text = new fabric.Text(textInput.value, {
+    const text = new fabric.IText(textInput.value, {
+      // Change fabric.Text to fabric.IText
       left: 100,
       top: 100,
       fill: brushColorPicker.value,
@@ -595,6 +602,29 @@ textInput.addEventListener("keypress", function (e) {
     canvas.add(text);
     textInput.value = "";
     textInput.style.display = "none";
+  }
+});
+
+// Enable double-click to edit text
+canvas.on("mouse:dblclick", function (options) {
+  const target = options.target;
+
+  if (target && target.type === "text") {
+    // Make the text object editable
+    target.enterEditing();
+    target.selectAll();
+  }
+});
+
+// Exit text editing mode when clicking outside the text object
+canvas.on("mouse:down", function (options) {
+  if (canvas.getActiveObject() && canvas.getActiveObject().type === "text") {
+    const target = options.target;
+
+    if (!target || target.type !== "text") {
+      // If the user clicks outside the text object, exit editing mode
+      canvas.getActiveObject().exitEditing();
+    }
   }
 });
 
