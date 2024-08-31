@@ -880,3 +880,58 @@ function updateClippingForObjects() {
 // Apply clipping to objects that intersect with the frame when moved or modified
 canvas.on("object:moving", updateClippingForObjects);
 canvas.on("object:modified", updateClippingForObjects);
+
+//Download Frame
+const downloadButton = document.getElementById("download-frame");
+
+downloadButton.addEventListener("click", function () {
+  if (activeFrame) {
+    // Get the bounding rectangle of the frame
+    const frameBounds = activeFrame.getBoundingRect();
+
+    // Step 1: Capture the entire canvas as a PNG
+    const fullCanvasDataURL = canvas.toDataURL({
+      format: "png",
+      multiplier: 1, // Adjust this for higher or lower resolution
+    });
+
+    // Step 2: Add the captured PNG back to the canvas as an image
+    fabric.Image.fromURL(fullCanvasDataURL, function (img) {
+      // Position the image exactly over the canvas
+      img.set({
+        left: 0,
+        top: 0,
+        selectable: false,
+        evented: false,
+      });
+
+      // Step 3: Create a cropped version of the image using the frame dimensions
+      const croppedCanvas = document.createElement("canvas");
+      croppedCanvas.width = frameBounds.width;
+      croppedCanvas.height = frameBounds.height;
+      const croppedCtx = croppedCanvas.getContext("2d");
+
+      // Draw the relevant portion of the full canvas onto the cropped canvas
+      croppedCtx.drawImage(
+        img.getElement(), // The image element from fabric.js
+        frameBounds.left, // Source x-coordinate (crop starting x)
+        frameBounds.top, // Source y-coordinate (crop starting y)
+        frameBounds.width, // Source width (crop width)
+        frameBounds.height, // Source height (crop height)
+        0, // Destination x (on the cropped canvas)
+        0, // Destination y (on the cropped canvas)
+        frameBounds.width, // Destination width
+        frameBounds.height // Destination height
+      );
+
+      // Step 4: Convert the cropped canvas to a data URL and trigger the download
+      const croppedDataURL = croppedCanvas.toDataURL("image/png");
+      const link = document.createElement("a");
+      link.href = croppedDataURL;
+      link.download = "frame.png";
+      link.click();
+    });
+  } else {
+    alert("No frame selected for download.");
+  }
+});
