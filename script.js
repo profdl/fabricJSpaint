@@ -743,3 +743,140 @@ function resizeCanvas() {
 
 window.addEventListener("resize", resizeCanvas);
 resizeCanvas();
+
+// Add drag and drop functionality for images
+canvasContainer.addEventListener("dragover", function (e) {
+  e.preventDefault();
+});
+
+canvasContainer.addEventListener("drop", function (e) {
+  e.preventDefault();
+  console.log("File dropped");
+  const file = e.dataTransfer.files[0];
+  if (file && file.type.startsWith("image/")) {
+    console.log("Valid image file detected");
+    const reader = new FileReader();
+    reader.onload = function (event) {
+      console.log("File read successfully");
+      fabric.Image.fromURL(
+        event.target.result,
+        function (img) {
+          console.log("Image loaded by fabric.js");
+          const scaleFactor = Math.min(
+            (canvas.width * 0.5) / img.width,
+            (canvas.height * 0.5) / img.height
+          );
+          img.scale(scaleFactor);
+
+          // Get the pointer position relative to the canvas
+          const pointer = canvas.getPointer(e);
+          // Center the image on the cursor location
+          img.set({
+            left: pointer.x - (img.width * scaleFactor) / 2,
+            top: pointer.y - (img.height * scaleFactor) / 2,
+            originX: "left",
+            originY: "top",
+          });
+
+          canvas.add(img);
+          console.log("Image added to canvas");
+
+          // Select the image
+          canvas.setActiveObject(img);
+
+          // Activate the select tool
+          canvas.isDrawingMode = false;
+          setActiveTool(selectModeButton);
+          canvas.renderAll();
+          console.log("Canvas rendered");
+          updateCanvasHistory();
+          console.log("Canvas history updated");
+        },
+        { crossOrigin: "anonymous" }
+      );
+    };
+    reader.readAsDataURL(file);
+  }
+});
+
+//=========================================================
+//Frame Tool
+const frameToolButton = document.getElementById("frame-tool");
+let activeFrame = null;
+
+// Frame creation event listener
+frameToolButton.addEventListener("click", function () {
+  setActiveTool(frameToolButton);
+  const canvasWidth = canvas.width;
+  const canvasHeight = canvas.height;
+  const size = Math.min(canvasWidth, canvasHeight) * 0.4; // Adjust the size as needed
+
+  // Create a new frame (Rect object in Fabric.js)
+  activeFrame = new fabric.Rect({
+    left: canvasWidth / 2,
+    top: canvasHeight / 2,
+    width: size,
+    height: size,
+    fill: "transparent", // No fill color
+    stroke: "black", // Optional: Add a border color
+    strokeWidth: 2,
+    originX: "center",
+    originY: "center",
+    selectable: true,
+    hasControls: true,
+    hasBorders: true,
+  });
+
+  canvas.add(activeFrame);
+  canvas.renderAll();
+
+  // Listen for changes to the frame size and update the clip paths
+  activeFrame.on("modified", updateClippingForObjects);
+});
+
+// Function to create and update the clipping path
+function updateClippingForObjects() {
+  const frameBounds = activeFrame.getBoundingRect();
+
+  canvas.getObjects().forEach((obj) => {
+    if (obj !== activeFrame) {
+      const objBounds = obj.getBoundingRect();
+
+      // Check if the object is completely outside the frame bounds
+      if (
+        objBounds.left > frameBounds.left + frameBounds.width ||
+        objBounds.left + objBounds.width < frameBounds.left ||
+        objBounds.top > frameBounds.top + frameBounds.height ||
+        objBounds.top + objBounds.height < frameBounds.top
+      ) {
+        obj.clipPath = null; // Remove clipping if completely outside the frame
+      }
+      // Check if the object intersects with the frame bounds
+      else if (
+        objBounds.left < frameBounds.left + frameBounds.width &&
+        objBounds.left + objBounds.width > frameBounds.left &&
+        objBounds.top < frameBounds.top + frameBounds.height &&
+        objBounds.top + objBounds.height > frameBounds.top
+      ) {
+        // Apply the updated clipping function
+        obj.clipPath = new fabric.Rect({
+          left: frameBounds.left,
+          top: frameBounds.top,
+          width: frameBounds.width,
+          height: frameBounds.height,
+          originX: "left",
+          originY: "top",
+          absolutePositioned: true,
+        });
+      } else {
+        obj.clipPath = null; // Remove clipping if outside frame
+      }
+    }
+  });
+
+  canvas.renderAll();
+}
+
+// Apply clipping to objects that intersect with the frame when moved or modified
+canvas.on("object:moving", updateClippingForObjects);
+canvas.on("object:modified", updateClippingForObjects);
