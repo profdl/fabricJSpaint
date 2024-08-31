@@ -1,5 +1,4 @@
-// ELEMENTS & VARIABLES ======================================
-// DOM elements for various controls
+// DOM element selections
 const canvasContainer = document.getElementById("canvas-container");
 const selectModeButton = document.getElementById("select-mode");
 const eraseModeButton = document.getElementById("erase-mode");
@@ -18,13 +17,12 @@ const addImageButton = document.getElementById("add-image");
 
 // Application state variables
 const defaultBrushSize = 7;
-let isLineModeActive = false; // To track if the line mode is active
-let startPoint = { x: 0, y: 0 }; // Start point for line drawing
-let lineInProgress = null; // Current line being drawn
-let lines = []; // Array to store all drawn lines
+let isLineModeActive = false;
+let startPoint = { x: 0, y: 0 };
+let lineInProgress = null;
+let lines = [];
 
-// CANVAS SETUP ==============================================
-// Initialize Fabric.js canvas with default settings
+// Initialize Fabric.js canvas
 const canvas = new fabric.Canvas("canvas", {
   isDrawingMode: true,
   width: 912,
@@ -32,24 +30,20 @@ const canvas = new fabric.Canvas("canvas", {
   backgroundColor: "#fff",
   historyUndo: [],
   historyRedo: [],
-  preserveObjectStacking: true, // Keep selected objects from being automatically brought to the front
+  preserveObjectStacking: true,
 });
 
-// UTILITY FUNCTIONS =========================================
-
-// Function to update the active tool button's UI state
+// Utility function to update active tool UI
 function setActiveTool(button) {
   const activeToolClass = "active-tool";
   const activeButton = document.querySelector("." + activeToolClass);
-
   if (activeButton) {
-    activeButton.classList.remove(activeToolClass); // Remove active state from any currently active button
+    activeButton.classList.remove(activeToolClass);
   }
-
-  button.classList.add(activeToolClass); // Add active state to the selected button
+  button.classList.add(activeToolClass);
 }
 
-// Function to convert a hex color to an RGBA format
+// Convert hex color to RGBA
 function hexToRGBA(hex, opacity) {
   const hexValue = hex.replace("#", "");
   const r = parseInt(hexValue.substring(0, 2), 16);
@@ -58,7 +52,7 @@ function hexToRGBA(hex, opacity) {
   return `rgba(${r},${g},${b},${opacity})`;
 }
 
-// Function to update brush opacity and color
+// Update brush opacity and color
 function updateBrushOpacityAndColor() {
   const opacity = brushOpacitySlider.value;
   const color = brushColorPicker.value;
@@ -68,12 +62,37 @@ function updateBrushOpacityAndColor() {
   opacitySizeLabel.textContent = opacity;
 }
 
+// Update color of selected objects
+function updateSelectedObjectsColor() {
+  const activeObjects = canvas.getActiveObjects();
+  if (activeObjects.length > 0) {
+    const color = brushColorPicker.value;
+    activeObjects.forEach((obj) => {
+      if (obj.fill) {
+        obj.set("fill", color);
+      }
+      if (obj.stroke) {
+        obj.set("stroke", color);
+      }
+    });
+    canvas.renderAll();
+    updateCanvasHistory();
+  }
+}
+
+// Event listener for color picker
+brushColorPicker.addEventListener("input", function () {
+  if (canvas.isDrawingMode) {
+    updateBrushOpacityAndColor();
+  } else {
+    updateSelectedObjectsColor();
+  }
+});
+
 // Initialize brush settings
 updateBrushOpacityAndColor();
 
-// EVENT LISTENERS ===========================================
-
-// Mode Change Event Listeners
+// Mode change event listeners
 selectModeButton.addEventListener("click", function () {
   isLineModeActive = false;
   canvas.isDrawingMode = false;
@@ -105,7 +124,7 @@ eraseModeButton.addEventListener("click", function () {
 });
 
 lineModeButton.addEventListener("click", function () {
-  isLineModeActive = !isLineModeActive; // Toggle line mode
+  isLineModeActive = !isLineModeActive;
   setActiveTool(lineModeButton);
   if (isLineModeActive) {
     canvas.isDrawingMode = false;
@@ -122,33 +141,29 @@ lineModeButton.addEventListener("click", function () {
   }
 });
 
-// Brush Width Change Listener
+// Brush width change listener
 brushWidthSlider.addEventListener("input", function () {
   const size = parseInt(this.value, 10) || 1;
   canvas.freeDrawingBrush.width = size;
   brushSizeLabel.textContent = size;
 });
 
-// INITIALIZE UI =============================================
-// Set initial values for sliders and labels
+// Initialize UI values
 opacitySizeLabel.textContent = brushOpacitySlider.value;
 canvas.freeDrawingBrush.width = defaultBrushSize;
 brushWidthSlider.value = defaultBrushSize;
 brushSizeLabel.textContent = defaultBrushSize;
 
-// LINE DRAWING HANDLING ======================================
-
-// Handle mouse events for line drawing on canvas
+// Line drawing handling
 canvas.on("mouse:down", function (options) {
   if (isLineModeActive) {
-    startPoint = canvas.getPointer(options.e); // Get starting point for line
+    startPoint = canvas.getPointer(options.e);
     const points = [startPoint.x, startPoint.y, startPoint.x, startPoint.y];
     const color = brushColorPicker.value;
     const opacity = brushOpacitySlider.value;
     const rgbaColor = hexToRGBA(color, opacity);
     const size = parseInt(brushWidthSlider.value, 10) || 1;
 
-    // Create a new line
     lineInProgress = new fabric.Line(points, {
       strokeWidth: size,
       fill: rgbaColor,
@@ -179,7 +194,6 @@ canvas.on("mouse:up", function () {
     const endPoint = canvas.getPointer(event.e);
     const points = [startPoint.x, startPoint.y, endPoint.x, endPoint.y];
 
-    // Finalize and add the line to the canvas
     const line = new fabric.Line(points, {
       strokeWidth: size,
       fill: rgbaColor,
@@ -193,89 +207,64 @@ canvas.on("mouse:up", function () {
     canvas.remove(lineInProgress);
     canvas.add(line);
     lineInProgress = null;
-    lines.push(line); // Store line for future reference
+    lines.push(line);
     canvas.renderAll();
-    updateCanvasHistory(); // Update the history for undo/redo functionality
+    updateCanvasHistory();
   }
 });
 
-//==========================================================
-// HISTORY ===========================================
-
-// Initialize history stacks
-canvas.historyUndo = [];
-canvas.historyRedo = [];
-
-// Update Canvas History Function
+// History management
 function updateCanvasHistory() {
-  // Save the current state to the undo stack
   const currentState = JSON.stringify(canvas.toJSON());
-
-  // Prevent duplicate states being pushed consecutively
   if (
     canvas.historyUndo.length === 0 ||
     canvas.historyUndo[canvas.historyUndo.length - 1] !== currentState
   ) {
     canvas.historyUndo.push(currentState);
   }
-
-  // Clear the redo stack after a new change
   canvas.historyRedo = [];
-
-  // Enable or disable undo/redo buttons based on the history stacks
   updateHistoryButtons();
 }
 
-// Undo Function
 function undo() {
   if (canvas.historyUndo.length > 1) {
-    // Move the current state from the undo stack to the redo stack
     const currentState = canvas.historyUndo.pop();
     canvas.historyRedo.push(currentState);
-
-    // Load the previous state from the undo stack
     const previousState = canvas.historyUndo[canvas.historyUndo.length - 1];
     canvas.loadFromJSON(previousState, function () {
       canvas.renderAll();
     });
   }
-
   updateHistoryButtons();
 }
 
-// Redo Function
 function redo() {
   if (canvas.historyRedo.length > 0) {
-    // Move the next state from the redo stack to the undo stack
     const nextState = canvas.historyRedo.pop();
     canvas.historyUndo.push(nextState);
-
-    // Load the next state from the redo stack
     canvas.loadFromJSON(nextState, function () {
       canvas.renderAll();
     });
   }
-
   updateHistoryButtons();
 }
 
-// Enable/Disable Undo and Redo Buttons
 function updateHistoryButtons() {
   undoButton.disabled = canvas.historyUndo.length <= 1;
   redoButton.disabled = canvas.historyRedo.length === 0;
 }
 
-// Attach event listeners for undo/redo buttons
+// Attach event listeners for undo/redo
 undoButton.addEventListener("click", undo);
 redoButton.addEventListener("click", redo);
 
-// Update history on certain canvas actions
+// Update history on canvas actions
 canvas.on("object:added", updateCanvasHistory);
 canvas.on("object:modified", updateCanvasHistory);
 canvas.on("object:removed", updateCanvasHistory);
 canvas.on("mouse:up", updateCanvasHistory);
 
-// Key events for undo and redo
+// Keyboard shortcuts for undo and redo
 document.addEventListener("keydown", function (e) {
   if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "z" && !e.shiftKey) {
     e.preventDefault();
@@ -290,11 +279,9 @@ document.addEventListener("keydown", function (e) {
   }
 });
 
-// COPY & PASTE ===========================================
-// Existing clipboard variable
+// Copy and paste functionality
 let _clipboard;
 
-// Copy Function
 function Copy() {
   const activeObject = canvas.getActiveObject();
   if (activeObject) {
@@ -304,18 +291,16 @@ function Copy() {
   }
 }
 
-// Cut Function
 function Cut() {
   const activeObject = canvas.getActiveObject();
   if (activeObject) {
     activeObject.clone(function (cloned) {
       _clipboard = cloned;
-      canvas.remove(activeObject); // Remove the selected object from the canvas
+      canvas.remove(activeObject);
     });
   }
 }
 
-// Paste Function
 function Paste() {
   if (_clipboard) {
     _clipboard.clone(function (clonedObj) {
@@ -342,22 +327,19 @@ function Paste() {
   }
 }
 
-// Add event listener for keyboard shortcuts
+// Keyboard shortcuts for various actions
 document.addEventListener("keydown", function (e) {
-  const activeObject = canvas.getActiveObject(); // Get the currently selected object or group
+  const activeObject = canvas.getActiveObject();
 
-  // Detect the Delete key or Command-X (cut) key combination
   if ((e.key === "Delete" || e.key === "Backspace") && activeObject) {
     e.preventDefault();
     if (activeObject.type === "activeSelection") {
-      // If multiple objects are selected, remove all of them
       activeObject.forEachObject(function (obj) {
         canvas.remove(obj);
       });
-      canvas.discardActiveObject(); // Deselect all objects
+      canvas.discardActiveObject();
       canvas.renderAll();
     } else {
-      // If a single object is selected, remove it
       canvas.remove(activeObject);
     }
   } else if (
@@ -394,18 +376,19 @@ document.addEventListener("keydown", function (e) {
   }
 });
 
-// Copy button event listener
+// Copy button functionality
 copyButton.addEventListener("click", function () {
   Copy();
   Paste();
 });
 
-// Clear Drawing button event listener remains unchanged
+// Clear drawing functionality
 document.getElementById("clear-drawing").addEventListener("click", function () {
   canvas.clear();
   canvas.backgroundColor = "#fff";
 });
 
+// Object added and modified event handlers
 canvas.on("object:added", function (e) {
   if (e.target.shadow) {
     e.target.selectable = false;
@@ -420,34 +403,27 @@ canvas.on("object:modified", function (e) {
   }
 });
 
-// =======================================================
-// Save as PNG
-// Save Image button event listener
+// Save as PNG functionality
 document.getElementById("save-image").addEventListener("click", function () {
   saveCanvasAsImage();
 });
 
 function saveCanvasAsImage() {
-  // Convert the canvas content to a data URL
   const dataURL = canvas.toDataURL({
     format: "png",
     multiplier: 1,
   });
-
-  // Create a temporary link element
   const link = document.createElement("a");
   link.href = dataURL;
-  link.download = "canvas-image.png"; // Set the default name for the downloaded file
-
-  // Trigger a click event on the link to start the download
+  link.download = "canvas-image.png";
   link.click();
 }
 
-// Upload Image
+// Upload image functionality
 const imageUploadInput = document.getElementById("image-upload");
 
 addImageButton.addEventListener("click", function () {
-  imageUploadInput.click(); // Trigger the file input click
+  imageUploadInput.click();
 });
 
 imageUploadInput.addEventListener("change", function (event) {
@@ -456,19 +432,15 @@ imageUploadInput.addEventListener("change", function (event) {
     const reader = new FileReader();
     reader.onload = function (f) {
       fabric.Image.fromURL(f.target.result, function (img) {
-        // Calculate the scale to 50% of the canvas size
         const scaleFactor = Math.min(
           (canvas.width * 0.5) / img.width,
           (canvas.height * 0.5) / img.height
         );
         img.scale(scaleFactor);
-
-        // Center the image on the canvas
         img.set({
           left: (canvas.width - img.width * scaleFactor) / 2,
           top: (canvas.height - img.height * scaleFactor) / 2,
         });
-
         canvas.add(img);
         canvas.renderAll();
       });
@@ -477,7 +449,7 @@ imageUploadInput.addEventListener("change", function (event) {
   }
 });
 
-/// Flatten Canvas button event listener
+// Flatten canvas functionality
 document
   .getElementById("flatten-canvas")
   .addEventListener("click", function () {
@@ -485,30 +457,21 @@ document
   });
 
 function confirmFlattenCanvas() {
-  // Show a confirmation dialog to the user
   const userConfirmed = window.confirm(
     "Are you sure you want to flatten all elements into a single image? This action cannot be undone."
   );
-
-  // If the user confirms, proceed with flattening the canvas
   if (userConfirmed) {
     flattenCanvas();
   }
 }
 
 function flattenCanvas() {
-  // Convert the current canvas to a data URL
   const dataURL = canvas.toDataURL({
     format: "png",
     multiplier: 1,
   });
-
-  // Clear the canvas of all objects
   canvas.clear();
-
-  // Create a new image element from the data URL
   fabric.Image.fromURL(dataURL, function (img) {
-    // Set the image to be the full size of the canvas
     img.set({
       left: 0,
       top: 0,
@@ -517,14 +480,12 @@ function flattenCanvas() {
       selectable: false,
       evented: false,
     });
-
-    // Add the image to the canvas
     canvas.add(img);
     canvas.renderAll();
   });
 }
 
-// Background Color Picker
+// Background color picker functionality
 const backgroundColorPicker = document.getElementById(
   "background-color-picker"
 );
@@ -538,8 +499,7 @@ function changeBackgroundColor(color) {
   canvas.renderAll();
 }
 
-// Zoom and Pan Functionality
-// Enable zooming and panning
+// Zoom and pan functionality
 canvas.on("mouse:wheel", function (opt) {
   var delta = opt.e.deltaY;
   var zoom = canvas.getZoom();
@@ -574,13 +534,12 @@ canvas.on("mouse:move", function (opt) {
 });
 
 canvas.on("mouse:up", function (opt) {
-  // on mouse up we want to recalculate new interaction
   this.setViewportTransform(this.viewportTransform);
   this.isDragging = false;
   this.selection = true;
 });
 
-// Text Tool Functionality
+// Text tool functionality
 const textToolButton = document.getElementById("text-tool");
 const textInput = document.getElementById("text-input");
 
@@ -593,7 +552,6 @@ textToolButton.addEventListener("click", function () {
 textInput.addEventListener("keypress", function (e) {
   if (e.key === "Enter") {
     const text = new fabric.IText(textInput.value, {
-      // Change fabric.Text to fabric.IText
       left: 100,
       top: 100,
       fill: brushColorPicker.value,
@@ -608,61 +566,67 @@ textInput.addEventListener("keypress", function (e) {
 // Enable double-click to edit text
 canvas.on("mouse:dblclick", function (options) {
   const target = options.target;
-
   if (target && target.type === "text") {
-    // Make the text object editable
     target.enterEditing();
     target.selectAll();
   }
 });
 
-// Exit text editing mode when clicking outside the text object
+// Exit text editing mode when clicking outside
 canvas.on("mouse:down", function (options) {
   if (canvas.getActiveObject() && canvas.getActiveObject().type === "text") {
     const target = options.target;
-
     if (!target || target.type !== "text") {
-      // If the user clicks outside the text object, exit editing mode
       canvas.getActiveObject().exitEditing();
     }
   }
 });
 
-//Shape Tool Functionality
+// Shape tool functionality
 const rectToolButton = document.getElementById("rect-tool");
 const circleToolButton = document.getElementById("circle-tool");
 
 rectToolButton.addEventListener("click", function () {
   setActiveTool(rectToolButton);
+  const canvasWidth = canvas.width;
+  const canvasHeight = canvas.height;
+  const size = Math.min(canvasWidth, canvasHeight) * 0.25;
   const rect = new fabric.Rect({
-    left: 100,
-    top: 100,
+    left: canvasWidth / 2,
+    top: canvasHeight / 2,
     fill: brushColorPicker.value,
-    width: 50,
-    height: 50,
+    width: size,
+    height: size,
+    originX: "center",
+    originY: "center",
   });
   canvas.add(rect);
+  canvas.renderAll();
 });
 
 circleToolButton.addEventListener("click", function () {
   setActiveTool(circleToolButton);
+  const canvasWidth = canvas.width;
+  const canvasHeight = canvas.height;
+  const radius = Math.min(canvasWidth, canvasHeight) * 0.125;
   const circle = new fabric.Circle({
-    left: 150,
-    top: 150,
+    left: canvasWidth / 2,
+    top: canvasHeight / 2,
     fill: brushColorPicker.value,
-    radius: 30,
+    radius: radius,
+    originX: "center",
+    originY: "center",
   });
   canvas.add(circle);
+  canvas.renderAll();
 });
 
-// Arrange Elements Functionality
-// Bring Forward and Send Backward Buttons
+// Arrange elements functionality
 const bringForwardButton = document.getElementById("bring-forward-button");
 const sendBackwardButton = document.getElementById("send-backward-button");
 const bringToFrontButton = document.getElementById("bring-to-front-button");
 const sendToBackButton = document.getElementById("send-to-back-button");
 
-// Bring Forward Button Functionality
 bringForwardButton.addEventListener("click", function () {
   const activeObject = canvas.getActiveObject();
   if (activeObject) {
@@ -670,41 +634,34 @@ bringForwardButton.addEventListener("click", function () {
   }
 });
 
-// Send Backward Button Functionality
 sendBackwardButton.addEventListener("click", function () {
   const activeObject = canvas.getActiveObject();
   if (activeObject) {
-    activeObject.set({ opacity: 0.5 }); // Optional: Change opacity for feedback
+    activeObject.set({ opacity: 0.5 });
     canvas.sendBackwards(activeObject, true);
-    canvas.renderAll(); // Keep the object selected after moving
+    canvas.renderAll();
     setTimeout(() => {
-      activeObject.set({ opacity: 1 }); // Reset opacity after the move
+      activeObject.set({ opacity: 1 });
       canvas.renderAll();
-    }, 200); // Timeout for visual feedback
+    }, 200);
   }
 });
 
-// Bring to Front Button Functionality
 bringToFrontButton.addEventListener("click", function () {
   const activeObject = canvas.getActiveObject();
   if (activeObject) {
-    canvas.bringToFront(activeObject); // Move the object to the front of the stack
-    console.log("Object brought to the front of the stack.");
+    canvas.bringToFront(activeObject);
   }
 });
 
-// Send to Back Button Functionality
 sendToBackButton.addEventListener("click", function () {
   const activeObject = canvas.getActiveObject();
   if (activeObject) {
-    canvas.sendToBack(activeObject); // Move the object to the back of the stack
-    console.log("Object sent to the back of the stack.");
+    canvas.sendToBack(activeObject);
   }
 });
 
-//===========================================================
-
-//Auto-save Functionality
+// Auto-save functionality
 window.addEventListener("beforeunload", function () {
   const canvasState = JSON.stringify(canvas.toJSON());
   localStorage.setItem("canvasState", canvasState);
@@ -719,74 +676,70 @@ window.addEventListener("load", function () {
   }
 });
 
-//===========================================================
-
-// Drag Functionality for Toolbars
+// Drag functionality for toolbars
 const toolbar = document.getElementById("toolbar");
 const optionsToolbar = document.getElementById("options-toolbar");
-const dragHandle = document.getElementById("drag-handle");
 
 let isDragging = false;
-let startX, startY, initialLeft, initialTop;
+let startX, startY, offsetX, offsetY;
 
-// Function to handle the start of dragging
-dragHandle.addEventListener("mousedown", function (e) {
+toolbar.addEventListener("mousedown", function (e) {
   isDragging = true;
-  startX = e.clientX;
-  startY = e.clientY;
-  initialLeft = toolbar.offsetLeft;
-  initialTop = toolbar.offsetTop;
-  document.body.style.userSelect = "none"; // Prevent text selection while dragging
-
-  // Debugging logs to check initial values
-  console.log("Dragging started at:", startX, startY);
-  console.log("Initial positions:", initialLeft, initialTop);
-
-  e.stopPropagation(); // Prevent other events from interfering
-  e.preventDefault(); // Prevent default behavior
+  const rect = toolbar.getBoundingClientRect();
+  offsetX = e.clientX - rect.left;
+  offsetY = e.clientY - rect.top;
+  document.body.style.userSelect = "none";
+  e.stopPropagation();
+  e.preventDefault();
 });
 
-// Function to handle the dragging movement
 document.addEventListener("mousemove", function (e) {
   if (isDragging) {
-    const dx = e.clientX - startX;
-    const dy = e.clientY - startY;
-
-    // Update toolbar positions
-    toolbar.style.left = `${initialLeft + dx}px`;
-    toolbar.style.top = `${initialTop + dy}px`;
-
-    // Move the options toolbar along with the main toolbar
-    optionsToolbar.style.left = `${initialLeft + dx}px`;
-    optionsToolbar.style.top = `${
-      initialTop + dy + toolbar.offsetHeight + 10
-    }px`; // Adjust spacing
-
-    // Debugging log for movement tracking
-    console.log("Dragging moved to:", e.clientX, e.clientY);
+    const newLeft = e.clientX - offsetX;
+    const newTop = e.clientY - offsetY;
+    toolbar.style.left = `${newLeft}px`;
+    toolbar.style.top = `${newTop}px`;
+    toolbar.style.bottom = "auto";
+    toolbar.style.transform = "none";
+    const toolbarRect = toolbar.getBoundingClientRect();
+    const optionsToolbarRect = optionsToolbar.getBoundingClientRect();
+    optionsToolbar.style.left = `${
+      newLeft + (toolbarRect.width - optionsToolbarRect.width) / 2
+    }px`;
+    optionsToolbar.style.top = `${newTop - optionsToolbarRect.height - 10}px`;
+    optionsToolbar.style.bottom = "auto";
+    optionsToolbar.style.transform = "none";
   }
 });
 
-// Function to handle the end of dragging
 document.addEventListener("mouseup", function () {
   if (isDragging) {
     isDragging = false;
-    document.body.style.userSelect = "auto"; // Re-enable text selection
-    console.log("Dragging ended");
+    document.body.style.userSelect = "auto";
   }
 });
 
-//=============================================
+function resetToolbarPositions() {
+  toolbar.style.left = "50%";
+  toolbar.style.top = "auto";
+  toolbar.style.bottom = "20px";
+  toolbar.style.transform = "translateX(-50%)";
+  optionsToolbar.style.left = "50%";
+  toolbar.style.top = "auto";
+  optionsToolbar.style.bottom = "58px";
+  optionsToolbar.style.transform = "translateX(-50%)";
+}
 
-//Canvas Resize Functionality
+toolbar.addEventListener("dblclick", resetToolbarPositions);
+resetToolbarPositions();
+toolbar.style.cursor = "move";
+
+// Canvas resize functionality
 function resizeCanvas() {
   canvas.setWidth(window.innerWidth);
   canvas.setHeight(window.innerHeight);
-  canvas.calcOffset(); // Recalculate the canvas offset
+  canvas.calcOffset();
 }
 
-// Call resizeCanvas on window resize
 window.addEventListener("resize", resizeCanvas);
-
-// Initial canvas resize to fill the window
 resizeCanvas();

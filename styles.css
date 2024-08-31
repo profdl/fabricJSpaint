@@ -34,15 +34,15 @@ canvas {
     padding: 4px 2px;
     border-radius: 8px;
     display: flex;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     justify-content: center;
     align-items: center;
     z-index: 11;
-    top: 10px;
-    left: 10px;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
     cursor: grab;
 }
-
 
 #options-toolbar {
     position: absolute;
@@ -54,10 +54,9 @@ canvas {
     justify-content: center;
     align-items: center;
     z-index: 11;
-    top: 60px;
-    left: 10px;
+    left: 50%;
+    transform: translateX(-50%);
 }
-
 
 /* Button Styles */
 button {
@@ -174,5 +173,14 @@ label {
     #options-toolbar {
         flex-direction: row;
         /* Keep in one line for smaller screens */
+        width: 90%;
+        /* Limit width on smaller screens */
+        max-width: 400px;
+        /* Maximum width for very wide screens */
+    }
+
+    #options-toolbar {
+        bottom: 70px;
+        /* Adjust for smaller screens */
     }
 }
