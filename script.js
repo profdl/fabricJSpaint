@@ -920,6 +920,7 @@ frameToolButton.addEventListener("click", function () {
   });
 
   // Listen for scaling events to adjust width and height instead of applying a scale transform
+  // Listen for scaling events to adjust width and height instead of applying a scale transform
   activeFrame.on("scaling", function () {
     const scaleX = activeFrame.scaleX;
     const scaleY = activeFrame.scaleY;
@@ -939,6 +940,10 @@ frameToolButton.addEventListener("click", function () {
     });
 
     frameLabel.setCoords();
+
+    // Update the clipping paths after scaling
+    updateClippingForObjects();
+
     canvas.renderAll();
   });
 
