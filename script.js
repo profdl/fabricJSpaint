@@ -805,11 +805,16 @@ const frameToolButton = document.getElementById("frame-tool");
 let activeFrame = null;
 
 // Frame creation event listener
+let frameCount = 0; // Keep track of the number of frames created
+
+// Frame creation event listener
 frameToolButton.addEventListener("click", function () {
   setActiveTool(frameToolButton);
   const canvasWidth = canvas.width;
   const canvasHeight = canvas.height;
   const size = Math.min(canvasWidth, canvasHeight) * 0.4; // Adjust the size as needed
+
+  frameCount += 1; // Increment the frame count
 
   // Create a new frame (Rect object in Fabric.js)
   activeFrame = new fabric.Rect({
@@ -827,19 +832,58 @@ frameToolButton.addEventListener("click", function () {
     hasBorders: true,
   });
 
+  // Create the label text object
+  const frameLabel = new fabric.Text(`Frame ${frameCount}`, {
+    fontSize: 12,
+    fontFamily: "Inter",
+    fontFamily: "sans-serif",
+    fill: "black",
+    left: activeFrame.left - activeFrame.width / 2,
+    top: activeFrame.top - activeFrame.height / 2 - 5,
+    originX: "left",
+    originY: "bottom",
+    selectable: false,
+    evented: false,
+    hasControls: false,
+    hasBorders: false,
+    hasRotatingPoint: false,
+    hasRotatingCenter: false,
+    hasEditingIcon: false,
+    hasTarget: false,
+    hasRotatingCenter: false,
+    hasEditingIcon: false,
+    hasTarget: false,
+    moveable: false,
+  });
+
   canvas.add(activeFrame);
+  canvas.add(frameLabel); // Add the label separately
 
   // Send the frame to the back
   canvas.sendToBack(activeFrame);
 
-  canvas.renderAll();
-
-  // Listen for changes to the frame size and update the clip paths
+  // Event listener to update label position when frame is modified
   activeFrame.on("modified", function () {
     updateClippingForObjects();
-    // Ensure the frame stays at the bottom after modification
     canvas.sendToBack(activeFrame);
+
+    // Update label position to remain above the top right corner
+    frameLabel.set({
+      left: activeFrame.left - activeFrame.width / 2,
+      top: activeFrame.top - activeFrame.height / 2 - 5,
+    });
+    frameLabel.setCoords();
+    canvas.renderAll();
   });
+
+  canvas.renderAll();
+});
+
+// Ensure the frame stays at the back when new objects are added
+canvas.on("object:added", function (e) {
+  if (activeFrame && e.target !== activeFrame) {
+    canvas.sendToBack(activeFrame); // Send the frame to the back
+  }
 });
 
 // Ensure the frame stays at the back when new objects are added
