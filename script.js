@@ -80,6 +80,30 @@ function updateSelectedObjectsColor() {
   }
 }
 
+// Update size of selected brush stroke
+function updateSelectedBrushStrokeSize() {
+  const activeObjects = canvas.getActiveObjects();
+  const newWidth = parseInt(brushWidthSlider.value);
+
+  activeObjects.forEach((obj) => {
+    if (obj.type === "path") {
+      obj.set("strokeWidth", newWidth);
+    }
+  });
+
+  canvas.renderAll();
+  updateCanvasHistory();
+}
+
+// Event listener for brush width slider
+brushWidthSlider.addEventListener("input", function () {
+  if (canvas.isDrawingMode) {
+    canvas.freeDrawingBrush.width = parseInt(this.value);
+  } else {
+    updateSelectedBrushStrokeSize();
+  }
+});
+
 // Event listener for color picker
 brushColorPicker.addEventListener("input", function () {
   if (canvas.isDrawingMode) {
@@ -601,6 +625,8 @@ rectToolButton.addEventListener("click", function () {
     originY: "center",
   });
   canvas.add(rect);
+  //set current tool to select
+  canvas.setActiveTool(selectModeButton);
   canvas.renderAll();
 });
 
@@ -618,6 +644,8 @@ circleToolButton.addEventListener("click", function () {
     originY: "center",
   });
   canvas.add(circle);
+  //set current tool to select
+  canvas.setActiveTool(selectModeButton);
   canvas.renderAll();
 });
 
@@ -807,6 +835,7 @@ let activeFrame = null;
 // Frame creation event listener
 let frameCount = 0;
 // Frame creation event listener
+// Frame creation event listener
 frameToolButton.addEventListener("click", function () {
   setActiveTool(frameToolButton);
   const canvasWidth = canvas.width;
@@ -819,7 +848,7 @@ frameToolButton.addEventListener("click", function () {
   activeFrame = new fabric.Rect({
     left: canvasWidth / 2,
     top: canvasHeight / 2,
-    width: size,
+    width: size * 1.77777777778,
     height: size,
     fill: "transparent", // No fill color
     stroke: "black", // Optional: Add a border color
@@ -835,7 +864,7 @@ frameToolButton.addEventListener("click", function () {
   const frameLabel = new fabric.Text(`Frame ${frameCount}`, {
     fontSize: 12,
     fontFamily: "Inter, sans-serif",
-    fill: "darkgray",
+    fill: "white",
     left: activeFrame.left - activeFrame.width / 2,
     top: activeFrame.top - activeFrame.height / 2 - 5,
     originX: "left",
