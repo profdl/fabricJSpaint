@@ -805,8 +805,7 @@ const frameToolButton = document.getElementById("frame-tool");
 let activeFrame = null;
 
 // Frame creation event listener
-let frameCount = 0; // Keep track of the number of frames created
-
+let frameCount = 0;
 // Frame creation event listener
 frameToolButton.addEventListener("click", function () {
   setActiveTool(frameToolButton);
@@ -832,12 +831,11 @@ frameToolButton.addEventListener("click", function () {
     hasBorders: true,
   });
 
-  // Create the label text object
+  // Create the label text object with your adjustments
   const frameLabel = new fabric.Text(`Frame ${frameCount}`, {
     fontSize: 12,
-    fontFamily: "Inter",
-    fontFamily: "sans-serif",
-    fill: "black",
+    fontFamily: "Inter, sans-serif",
+    fill: "darkgray",
     left: activeFrame.left - activeFrame.width / 2,
     top: activeFrame.top - activeFrame.height / 2 - 5,
     originX: "left",
@@ -847,12 +845,6 @@ frameToolButton.addEventListener("click", function () {
     hasControls: false,
     hasBorders: false,
     hasRotatingPoint: false,
-    hasRotatingCenter: false,
-    hasEditingIcon: false,
-    hasTarget: false,
-    hasRotatingCenter: false,
-    hasEditingIcon: false,
-    hasTarget: false,
     moveable: false,
   });
 
@@ -876,6 +868,29 @@ frameToolButton.addEventListener("click", function () {
     canvas.renderAll();
   });
 
+  // Listen for scaling events to adjust width and height instead of applying a scale transform
+  activeFrame.on("scaling", function () {
+    const scaleX = activeFrame.scaleX;
+    const scaleY = activeFrame.scaleY;
+
+    // Update the actual width and height of the frame based on the scaling factor
+    activeFrame.set({
+      width: activeFrame.width * scaleX,
+      height: activeFrame.height * scaleY,
+      scaleX: 1, // Reset the scale to 1
+      scaleY: 1, // Reset the scale to 1
+    });
+
+    // Recalculate and update label position
+    frameLabel.set({
+      left: activeFrame.left - activeFrame.width / 2,
+      top: activeFrame.top - activeFrame.height / 2 - 5,
+    });
+
+    frameLabel.setCoords();
+    canvas.renderAll();
+  });
+
   canvas.renderAll();
 });
 
@@ -883,14 +898,6 @@ frameToolButton.addEventListener("click", function () {
 canvas.on("object:added", function (e) {
   if (activeFrame && e.target !== activeFrame) {
     canvas.sendToBack(activeFrame); // Send the frame to the back
-  }
-});
-
-// Ensure the frame stays at the back when new objects are added
-canvas.on("object:added", function (e) {
-  if (activeFrame && e.target !== activeFrame) {
-    // Send the frame to the back if it's not the object that was added
-    canvas.sendToBack(activeFrame);
   }
 });
 
