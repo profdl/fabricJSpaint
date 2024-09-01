@@ -27,7 +27,7 @@ const canvas = new fabric.Canvas("canvas", {
   isDrawingMode: true,
   width: 912,
   height: 712,
-  backgroundColor: "#fff",
+  backgroundColor: "#202020",
   historyUndo: [],
   historyRedo: [],
   preserveObjectStacking: true,
@@ -62,6 +62,14 @@ function updateBrushOpacityAndColor() {
   opacitySizeLabel.textContent = opacity;
 }
 
+brushOpacitySlider.addEventListener("input", function () {
+  if (canvas.isDrawingMode) {
+    updateBrushOpacityAndColor();
+  } else {
+    updateSelectedObjectsOpacity();
+  }
+});
+
 // Update color of selected objects
 function updateSelectedObjectsColor() {
   const activeObjects = canvas.getActiveObjects();
@@ -74,6 +82,19 @@ function updateSelectedObjectsColor() {
       if (obj.stroke) {
         obj.set("stroke", color);
       }
+    });
+    canvas.renderAll();
+    updateCanvasHistory();
+  }
+}
+
+function updateSelectedObjectsOpacity() {
+  const activeObjects = canvas.getActiveObjects();
+  const newOpacity = parseFloat(brushOpacitySlider.value);
+
+  if (activeObjects.length > 0) {
+    activeObjects.forEach((obj) => {
+      obj.set("opacity", newOpacity);
     });
     canvas.renderAll();
     updateCanvasHistory();
@@ -409,7 +430,7 @@ copyButton.addEventListener("click", function () {
 // Clear drawing functionality
 document.getElementById("clear-drawing").addEventListener("click", function () {
   canvas.clear();
-  canvas.backgroundColor = "#fff";
+  canvas.backgroundColor = "#202020";
 });
 
 // Object added and modified event handlers
@@ -844,15 +865,16 @@ frameToolButton.addEventListener("click", function () {
 
   frameCount += 1; // Increment the frame count
 
-  // Create a new frame (Rect object in Fabric.js)
+  // Create a new frame (Rect object in Fabric.js) with a dashed line
   activeFrame = new fabric.Rect({
     left: canvasWidth / 2,
     top: canvasHeight / 2,
     width: size * 1.77777777778,
     height: size,
-    fill: "transparent", // No fill color
-    stroke: "black", // Optional: Add a border color
-    strokeWidth: 2,
+    fill: "#f0f0f0",
+    stroke: "black", // Stroke color
+    strokeWidth: 1, // 1 pixel stroke width
+    strokeDashArray: [5, 5], // Dashed line: 5 pixels dash, 5 pixels gap
     originX: "center",
     originY: "center",
     selectable: true,
