@@ -828,14 +828,32 @@ frameToolButton.addEventListener("click", function () {
   });
 
   canvas.add(activeFrame);
+
+  // Send the frame to the back
+  canvas.sendToBack(activeFrame);
+
   canvas.renderAll();
 
   // Listen for changes to the frame size and update the clip paths
-  activeFrame.on("modified", updateClippingForObjects);
+  activeFrame.on("modified", function () {
+    updateClippingForObjects();
+    // Ensure the frame stays at the bottom after modification
+    canvas.sendToBack(activeFrame);
+  });
+});
+
+// Ensure the frame stays at the back when new objects are added
+canvas.on("object:added", function (e) {
+  if (activeFrame && e.target !== activeFrame) {
+    // Send the frame to the back if it's not the object that was added
+    canvas.sendToBack(activeFrame);
+  }
 });
 
 // Function to create and update the clipping path
 function updateClippingForObjects() {
+  if (!activeFrame) return; // If no frame is active, exit the function
+
   const frameBounds = activeFrame.getBoundingRect();
 
   canvas.getObjects().forEach((obj) => {
@@ -851,14 +869,8 @@ function updateClippingForObjects() {
       ) {
         obj.clipPath = null; // Remove clipping if completely outside the frame
       }
-      // Check if the object intersects with the frame bounds
-      else if (
-        objBounds.left < frameBounds.left + frameBounds.width &&
-        objBounds.left + objBounds.width > frameBounds.left &&
-        objBounds.top < frameBounds.top + frameBounds.height &&
-        objBounds.top + objBounds.height > frameBounds.top
-      ) {
-        // Apply the updated clipping function
+      // Apply clipping if the object is at least partially within the frame
+      else {
         obj.clipPath = new fabric.Rect({
           left: frameBounds.left,
           top: frameBounds.top,
@@ -868,9 +880,11 @@ function updateClippingForObjects() {
           originY: "top",
           absolutePositioned: true,
         });
-      } else {
-        obj.clipPath = null; // Remove clipping if outside frame
       }
+
+      // Mark the object as dirty to force redraw
+      obj.dirty = true;
+      obj.setCoords(); // Recalculate the object's coordinates
     }
   });
 
@@ -878,8 +892,13 @@ function updateClippingForObjects() {
 }
 
 // Apply clipping to objects that intersect with the frame when moved or modified
-canvas.on("object:moving", updateClippingForObjects);
-canvas.on("object:modified", updateClippingForObjects);
+canvas.on("object:moving", function () {
+  if (activeFrame) updateClippingForObjects();
+});
+
+canvas.on("object:modified", function () {
+  if (activeFrame) updateClippingForObjects();
+});
 
 //Download Frame
 const downloadButton = document.getElementById("download-frame");
@@ -933,5 +952,21 @@ downloadButton.addEventListener("click", function () {
     });
   } else {
     alert("No frame selected for download.");
+  }
+});
+
+// Clear clipping paths when frame is deleted
+function clearClippingPaths() {
+  canvas.getObjects().forEach((obj) => {
+    obj.clipPath = null;
+  });
+  canvas.renderAll();
+}
+
+// Example usage when frame is deleted
+canvas.on("object:removed", function (e) {
+  if (e.target === activeFrame) {
+    activeFrame = null;
+    clearClippingPaths();
   }
 });

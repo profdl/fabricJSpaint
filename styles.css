@@ -184,3 +184,17 @@ label {
         /* Adjust for smaller screens */
     }
 }
+
+
+/* Frame label styles */
+.frame-label {
+    font-family: 'Inter', sans-serif;
+    font-size: 12px;
+    color: white;
+    background-color: rgba(0, 0, 0, 0.5);
+    /* Optional: semi-transparent background */
+    padding: 2px 4px;
+    /* Optional: add some padding */
+    border-radius: 4px;
+    /* Optional: rounded corners */
+}
