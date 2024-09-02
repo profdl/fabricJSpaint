@@ -9,6 +9,24 @@
 </head>
 
 <body>
+    <div class="panel" id="doc-panel">
+        <button id="undo-button" title="Undo"><i class="fas fa-undo"></i></button>
+        <button id="redo-button" title="Redo"><i class="fas fa-redo"></i></button>
+        <div class="spacer"></div>
+
+        <input type="color" id="background-color-picker" title="Background Color" value="#ffffff">
+
+        <button id="save-image" title="Save Image"><i class="fas fa-download"></i></button>
+        <button id="add-image" title="Add Image"><i class="fas fa-image"></i></button>
+        <input type="file" id="image-upload" accept="image/*" style="display:none;">
+        <button id="flatten-canvas" title="Flatten Canvas"><i class="fas fa-compress-arrows-alt"></i></button>
+        <button id="download-frame">Save Frame</button>
+        <div class="spacer"></div>
+
+        <button id="clear-drawing" title="Clear Drawing"><i class="fas fa-trash-alt"></i></button>
+
+
+    </div>
     <div class="toolbar" id="toolbar">
         <div id="drag-handle" class="drag-handle"><i class="fa fa-grip-vertical"></i></div>
         <div class="spacer"></div>
@@ -18,7 +36,7 @@
 
         <button id="draw-mode" class="active-tool" title="Draw Mode"><i class="fas fa-pencil-alt"></i></button>
         <button id="erase-mode" title="Erase Mode"><i class="fas fa-eraser"></i></button>
-        <button id="line-mode" title="Line Mode"><i class="fas fa-grip-lines"></i></button>
+        <button id="line-mode" title="Line Mode"><i class="fas fa-ruler"></i></button>
         <div class="spacer"></div>
 
         <button id="text-tool" title="Text Tool"><i class="fas fa-font"></i></button>
@@ -27,7 +45,7 @@
         <button id="circle-tool" title="Circle Tool"><i class="fas fa-circle"></i></button>
         <div class="spacer"></div>
 
-        <button id="frame-tool" title="Frame Tool"><i class="fas fa-border-style"></i></button>
+        <button id="frame-tool" title="Frame Tool"><i class="fas fa-vector-square"></i></button>
     </div>
     <div class="toolbar" id="options-toolbar">
         <label for="brush-width-label">Size</label>
@@ -45,22 +63,7 @@
         <button id="bring-to-front-button" title="Bring to Front"><i class="fas fa-angle-double-up"></i></button>
         <button id="send-to-back-button" title="Send to Back"><i class="fas fa-angle-double-down"></i></button>
     </div>
-    <div class="panel" id="doc-panel">
-        <button id="undo-button" title="Undo"><i class="fas fa-undo"></i></button>
-        <button id="redo-button" title="Redo"><i class="fas fa-redo"></i></button>
-        <button id="clear-drawing" title="Clear Drawing"><i class="fas fa-trash-alt"></i></button>
-        <div class="spacer"></div>
 
-        <input type="color" id="background-color-picker" title="Background Color" value="#ffffff">
-        <div class="spacer"></div>
-
-        <button id="save-image" title="Save Image"><i class="fas fa-download"></i></button>
-        <button id="add-image" title="Add Image"><i class="fas fa-image"></i></button>
-        <input type="file" id="image-upload" accept="image/*" style="display:none;">
-        <button id="flatten-canvas" title="Flatten Canvas"><i class="fas fa-compress-arrows-alt"></i></button>
-        <button id="download-frame">Save Frame</button>
-
-    </div>
 
     <div id="canvas-container">
         <canvas id="canvas"></canvas>

@@ -42,15 +42,10 @@ function setActiveTool(button) {
   }
   button.classList.add(activeToolClass);
 
-  // Show/hide toolbars based on the active tool
+  // Show/hide select-options-toolbar based on the active tool
   if (button === selectModeButton) {
-    optionsToolbar.style.display = "none";
     selectOptionsToolbar.style.display = "flex";
-  } else if (button === drawModeButton || button === lineModeButton) {
-    optionsToolbar.style.display = "flex";
-    selectOptionsToolbar.style.display = "none";
   } else {
-    optionsToolbar.style.display = "none";
     selectOptionsToolbar.style.display = "none";
   }
 
@@ -188,6 +183,7 @@ lineModeButton.addEventListener("click", function () {
   if (isLineModeActive) {
     canvas.isDrawingMode = false;
     canvas.selection = false;
+    canvas.defaultCursor = "crosshair"; // Set crosshair cursor when line mode is active
     canvas.forEachObject(function (obj) {
       obj.selectable = false;
     });
@@ -196,6 +192,8 @@ lineModeButton.addEventListener("click", function () {
     });
   } else {
     canvas.isDrawingMode = true;
+    canvas.selection = true;
+    canvas.defaultCursor = "crosshair"; // Reset cursor to default when line mode is inactive
     setActiveTool(drawModeButton);
   }
 });
@@ -216,6 +214,8 @@ brushSizeLabel.textContent = defaultBrushSize;
 // Line drawing handling
 canvas.on("mouse:down", function (options) {
   if (isLineModeActive) {
+    canvas.selection = false; // Disable selection
+    canvas.defaultCursor = "crosshair";
     startPoint = canvas.getPointer(options.e);
     const points = [startPoint.x, startPoint.y, startPoint.x, startPoint.y];
     const color = brushColorPicker.value;
@@ -238,6 +238,8 @@ canvas.on("mouse:down", function (options) {
 
 canvas.on("mouse:move", function (options) {
   if (isLineModeActive && lineInProgress) {
+    canvas.selection = false; // Disable selection
+
     const pointer = canvas.getPointer(options.e);
     lineInProgress.set({ x2: pointer.x, y2: pointer.y });
     canvas.renderAll();
@@ -270,6 +272,8 @@ canvas.on("mouse:up", function () {
     canvas.renderAll();
     updateCanvasHistory();
   }
+  canvas.selection = true; // Re-enable selection after drawing
+  canvas.defaultCursor = "default"; // Reset cursor to default
 });
 
 // History management
@@ -550,11 +554,15 @@ const backgroundColorPicker = document.getElementById(
 );
 
 backgroundColorPicker.addEventListener("input", function () {
-  changeBackgroundColor(this.value);
+  changeFrameColor(this.value);
 });
 
-function changeBackgroundColor(color) {
-  canvas.backgroundColor = color;
+function changeFrameColor(color) {
+  canvas.getObjects().forEach((obj) => {
+    if (obj.type === "rect" && obj.strokeDashArray) {
+      obj.set("fill", color);
+    }
+  });
   canvas.renderAll();
 }
 
@@ -600,44 +608,59 @@ canvas.on("mouse:up", function (opt) {
 
 // Text tool functionality
 const textToolButton = document.getElementById("text-tool");
-const textInput = document.getElementById("text-input");
 
 textToolButton.addEventListener("click", function () {
   setActiveTool(textToolButton);
-  textInput.style.display = "inline-block";
-  textInput.focus();
-});
 
-textInput.addEventListener("keypress", function (e) {
-  if (e.key === "Enter") {
-    const text = new fabric.IText(textInput.value, {
-      left: 100,
-      top: 100,
-      fill: brushColorPicker.value,
-      fontSize: 20,
-    });
-    canvas.add(text);
-    textInput.value = "";
-    textInput.style.display = "none";
-  }
+  const windowWidth = window.innerWidth;
+  const windowHeight = window.innerHeight;
+  const fontSize = Math.min(windowWidth, windowHeight) * 0.25;
+
+  const text = new fabric.IText("Text", {
+    left: canvas.width / 2,
+    top: canvas.height / 2,
+    originX: "center",
+    originY: "center",
+    fontSize: fontSize,
+    fill: brushColorPicker.value,
+    fontFamily: "Arial",
+    editable: true,
+  });
+
+  canvas.add(text);
+  canvas.setActiveObject(text);
+  canvas.renderAll();
+  setActiveTool(selectModeButton);
 });
 
 // Enable double-click to edit text
 canvas.on("mouse:dblclick", function (options) {
   const target = options.target;
-  if (target && target.type === "text") {
+  if (target && target.type === "i-text") {
     target.enterEditing();
     target.selectAll();
+    canvas.requestRenderAll();
   }
 });
 
 // Exit text editing mode when clicking outside
 canvas.on("mouse:down", function (options) {
-  if (canvas.getActiveObject() && canvas.getActiveObject().type === "text") {
+  if (canvas.getActiveObject() && canvas.getActiveObject().type === "i-text") {
     const target = options.target;
-    if (!target || target.type !== "text") {
+    if (!target || target.type !== "i-text") {
       canvas.getActiveObject().exitEditing();
+      canvas.requestRenderAll();
     }
+  }
+});
+
+// Ensure text objects are selectable
+canvas.on("object:added", function (e) {
+  if (e.target && e.target.type === "i-text") {
+    e.target.set({
+      selectable: true,
+      editable: true,
+    });
   }
 });
 
@@ -791,15 +814,34 @@ function updateToolbarPositions() {
   const toolbarRect = toolbar.getBoundingClientRect();
   const toolbarTop = toolbarRect.top;
 
-  [optionsToolbar, selectOptionsToolbar].forEach((tb) => {
-    tb.style.position = "absolute";
-    tb.style.left = `${
-      toolbarRect.left + (toolbarRect.width - tb.offsetWidth) / 2
-    }px`;
-    tb.style.top = `${toolbarTop - tb.offsetHeight - 10}px`;
-    tb.style.bottom = "auto";
-    tb.style.transform = "none";
-  });
+  // Calculate the total width of both toolbars
+  const totalWidth =
+    optionsToolbar.offsetWidth + selectOptionsToolbar.offsetWidth;
+
+  // Position optionsToolbar
+  optionsToolbar.style.position = "absolute";
+  optionsToolbar.style.left = `${
+    toolbarRect.left + (toolbarRect.width - totalWidth) / 2
+  }px`;
+  optionsToolbar.style.top = `${
+    toolbarTop - optionsToolbar.offsetHeight - 10
+  }px`;
+  optionsToolbar.style.bottom = "auto";
+  optionsToolbar.style.transform = "none";
+
+  // Position selectOptionsToolbar
+  selectOptionsToolbar.style.position = "absolute";
+  selectOptionsToolbar.style.left = `${
+    toolbarRect.left +
+    (toolbarRect.width - totalWidth) / 2 +
+    optionsToolbar.offsetWidth +
+    4
+  }px`;
+  selectOptionsToolbar.style.top = `${
+    toolbarTop - selectOptionsToolbar.offsetHeight - 10
+  }px`;
+  selectOptionsToolbar.style.bottom = "auto";
+  selectOptionsToolbar.style.transform = "none";
 }
 
 window.addEventListener("resize", updateToolbarPositions);
