@@ -23,6 +23,7 @@ let lineInProgress = null;
 let lines = [];
 
 // Initialize Fabric.js canvas
+// Initialize Fabric.js canvas
 const canvas = new fabric.Canvas("canvas", {
   isDrawingMode: true,
   width: 912,
@@ -31,6 +32,21 @@ const canvas = new fabric.Canvas("canvas", {
   historyUndo: [],
   historyRedo: [],
   preserveObjectStacking: true,
+});
+
+// Create a frame automatically after canvas initialization
+let activeFrame = null;
+
+// Use canvas.getWidth() and canvas.getHeight() to get the actual size
+const canvasWidth = canvas.getWidth();
+const canvasHeight = canvas.getHeight();
+const size = Math.min(canvasWidth, canvasHeight) * 0.75; // Adjust the size as needed
+
+// Ensure the frame stays at the back when new objects are added
+canvas.on("object:added", function (e) {
+  if (activeFrame && e.target !== activeFrame) {
+    canvas.sendToBack(activeFrame); // Send the frame to the back
+  }
 });
 
 // Utility function to update active tool UI and show/hide toolbars
@@ -445,11 +461,50 @@ copyButton.addEventListener("click", function () {
   Paste();
 });
 
-// Clear drawing functionality
 document.getElementById("clear-drawing").addEventListener("click", function () {
+  // Clear the canvas and reset its properties
   canvas.clear();
+  resizeCanvas(); // Call this after initializing the canvas
+  canvas.setZoom(1); // Ensure zoom is reset
+  initializeFrame();
   canvas.backgroundColor = "#202020";
+  canvas.setZoom(1);
+
+  // Reinitialize the frame
+  initializeFrame();
 });
+
+//clear-drawing simulate
+document.getElementById("clear-drawing").click();
+resizeCanvas(); // Call this after initializing the canvas
+
+// Function to initialize the frame
+function initializeFrame() {
+  const canvasWidth = canvas.getWidth();
+  const canvasHeight = canvas.getHeight();
+  const size = Math.min(canvasWidth, canvasHeight) * 0.6; // Adjust the size as needed
+
+  // Create a new frame (Rect object in Fabric.js) with a dashed line
+  activeFrame = new fabric.Rect({
+    left: canvasWidth / 2, // Adjust left offset to center horizontally
+    top: canvasHeight * 0.45, // Center the frame vertically
+    width: size * 1.77777777778,
+    height: size,
+    fill: "#f0f0f0",
+    stroke: "black", // Stroke color
+    strokeWidth: 1, // 1 pixel stroke width
+    strokeDashArray: [5, 5], // Dashed line: 5 pixels dash, 5 pixels gap
+    originX: "center",
+    originY: "center",
+    selectable: true,
+    hasControls: true,
+    hasBorders: true,
+  });
+
+  // Add the frame to the canvas and recalculate offsets
+  canvas.add(activeFrame);
+  canvas.calcOffset();
+}
 
 // Object added and modified event handlers
 canvas.on("object:added", function (e) {
@@ -568,15 +623,26 @@ function changeFrameColor(color) {
 
 // Zoom and pan functionality
 canvas.on("mouse:wheel", function (opt) {
-  var delta = opt.e.deltaY;
-  var zoom = canvas.getZoom();
+  const delta = opt.e.deltaY;
+  let zoom = canvas.getZoom();
   zoom *= 0.999 ** delta;
+
   if (zoom > 20) zoom = 20;
   if (zoom < 0.01) zoom = 0.01;
-  canvas.setZoom(zoom);
+
+  const pointer = canvas.getPointer(opt.e);
+  const zoomPointX = pointer.x;
+  const zoomPointY = pointer.y;
+
+  // Calculate the new viewport position
+  canvas.zoomToPoint({ x: zoomPointX, y: zoomPointY }, zoom);
+
   opt.e.preventDefault();
   opt.e.stopPropagation();
 });
+
+//reset zoom
+canvas.setZoom(1);
 
 canvas.on("mouse:down", function (opt) {
   var evt = opt.e;
@@ -748,19 +814,19 @@ sendToBackButton.addEventListener("click", function () {
 });
 
 // Auto-save functionality
-window.addEventListener("beforeunload", function () {
-  const canvasState = JSON.stringify(canvas.toJSON());
-  localStorage.setItem("canvasState", canvasState);
-});
+// window.addEventListener("beforeunload", function () {
+//   const canvasState = JSON.stringify(canvas.toJSON());
+//   localStorage.setItem("canvasState", canvasState);
+// });
 
-window.addEventListener("load", function () {
-  const savedState = localStorage.getItem("canvasState");
-  if (savedState) {
-    canvas.loadFromJSON(savedState, function () {
-      canvas.renderAll();
-    });
-  }
-});
+// window.addEventListener("load", function () {
+//   const savedState = localStorage.getItem("canvasState");
+//   if (savedState) {
+//     canvas.loadFromJSON(savedState, function () {
+//       canvas.renderAll();
+//     });
+//   }
+// });
 
 // Drag functionality for toolbars
 const toolbar = document.getElementById("toolbar");
@@ -918,106 +984,6 @@ canvasContainer.addEventListener("drop", function (e) {
 
 //=========================================================
 //Frame Tool
-
-const frameToolButton = document.getElementById("frame-tool");
-let activeFrame = null;
-
-// Frame creation event listener
-let frameCount = 0;
-// Frame creation event listener
-// Frame creation event listener
-frameToolButton.addEventListener("click", function () {
-  setActiveTool(frameToolButton);
-  const canvasWidth = canvas.width;
-  const canvasHeight = canvas.height;
-  const size = Math.min(canvasWidth, canvasHeight) * 0.4; // Adjust the size as needed
-
-  frameCount += 1; // Increment the frame count
-
-  // Create a new frame (Rect object in Fabric.js) with a dashed line
-  activeFrame = new fabric.Rect({
-    left: canvasWidth / 2,
-    top: canvasHeight / 2,
-    width: size * 1.77777777778,
-    height: size,
-    fill: "#f0f0f0",
-    stroke: "black", // Stroke color
-    strokeWidth: 1, // 1 pixel stroke width
-    strokeDashArray: [5, 5], // Dashed line: 5 pixels dash, 5 pixels gap
-    originX: "center",
-    originY: "center",
-    selectable: true,
-    hasControls: true,
-    hasBorders: true,
-  });
-
-  // Create the label text object with your adjustments
-  const frameLabel = new fabric.Text(`Frame ${frameCount}`, {
-    fontSize: 12,
-    fontFamily: "Inter, sans-serif",
-    fill: "white",
-    left: activeFrame.left - activeFrame.width / 2,
-    top: activeFrame.top - activeFrame.height / 2 - 5,
-    originX: "left",
-    originY: "bottom",
-    selectable: false,
-    evented: false,
-    hasControls: false,
-    hasBorders: false,
-    hasRotatingPoint: false,
-    moveable: false,
-  });
-
-  canvas.add(activeFrame);
-  canvas.add(frameLabel); // Add the label separately
-
-  // Send the frame to the back
-  canvas.sendToBack(activeFrame);
-
-  // Event listener to update label position when frame is modified
-  activeFrame.on("modified", function () {
-    updateClippingForObjects();
-    canvas.sendToBack(activeFrame);
-
-    // Update label position to remain above the top right corner
-    frameLabel.set({
-      left: activeFrame.left - activeFrame.width / 2,
-      top: activeFrame.top - activeFrame.height / 2 - 5,
-    });
-    frameLabel.setCoords();
-    canvas.renderAll();
-  });
-
-  // Listen for scaling events to adjust width and height instead of applying a scale transform
-  // Listen for scaling events to adjust width and height instead of applying a scale transform
-  activeFrame.on("scaling", function () {
-    const scaleX = activeFrame.scaleX;
-    const scaleY = activeFrame.scaleY;
-
-    // Update the actual width and height of the frame based on the scaling factor
-    activeFrame.set({
-      width: activeFrame.width * scaleX,
-      height: activeFrame.height * scaleY,
-      scaleX: 1, // Reset the scale to 1
-      scaleY: 1, // Reset the scale to 1
-    });
-
-    // Recalculate and update label position
-    frameLabel.set({
-      left: activeFrame.left - activeFrame.width / 2,
-      top: activeFrame.top - activeFrame.height / 2 - 5,
-    });
-
-    frameLabel.setCoords();
-
-    // Update the clipping paths after scaling
-    updateClippingForObjects();
-
-    canvas.renderAll();
-  });
-
-  canvas.renderAll();
-});
 
 // Ensure the frame stays at the back when new objects are added
 canvas.on("object:added", function (e) {
