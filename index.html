@@ -10,34 +10,25 @@
 
 <body>
     <div class="toolbar" id="toolbar">
-        <div id="drag-handle" class="drag-handle"><i class="fas fa-grip-lines"></i></div>
+        <div id="drag-handle" class="drag-handle"><i class="fa fa-grip-vertical"></i></div>
+        <div class="spacer"></div>
+
         <button id="select-mode" title="Select Mode"><i class="fas fa-mouse-pointer"></i></button>
+        <div class="spacer"></div>
+
         <button id="draw-mode" class="active-tool" title="Draw Mode"><i class="fas fa-pencil-alt"></i></button>
         <button id="erase-mode" title="Erase Mode"><i class="fas fa-eraser"></i></button>
         <button id="line-mode" title="Line Mode"><i class="fas fa-grip-lines"></i></button>
+        <div class="spacer"></div>
+
         <button id="text-tool" title="Text Tool"><i class="fas fa-font"></i></button>
         <input type="text" id="text-input" style="display:none;" placeholder="Enter text here">
         <button id="rect-tool" title="Rectangle Tool"><i class="fas fa-square"></i></button>
         <button id="circle-tool" title="Circle Tool"><i class="fas fa-circle"></i></button>
-        <button id="copy-button" title="Copy" class="copy-btn"><i class="fas fa-copy"></i></button>
-        <button id="undo-button" title="Undo"><i class="fas fa-undo"></i></button>
-        <button id="redo-button" title="Redo"><i class="fas fa-redo"></i></button>
-        <button id="clear-drawing" title="Clear Drawing"><i class="fas fa-trash-alt"></i></button>
-        <button id="save-image" title="Save Image"><i class="fas fa-download"></i></button>
-        <button id="add-image" title="Add Image"><i class="fas fa-image"></i></button>
-        <input type="file" id="image-upload" accept="image/*" style="display:none;">
-        <button id="flatten-canvas" title="Flatten Canvas"><i class="fas fa-compress-arrows-alt"></i></button>
-        <input type="color" id="background-color-picker" title="Background Color" value="#ffffff">
-        <button id="bring-forward-button" title="Bring Forward"><i class="fas fa-arrow-up"></i></button>
-        <button id="send-backward-button" title="Send Backward"><i class="fas fa-arrow-down"></i></button>
-        <button id="bring-to-front-button" title="Bring to Front"><i class="fas fa-angle-double-up"></i></button>
-        <button id="send-to-back-button" title="Send to Back"><i class="fas fa-angle-double-down"></i></button>
-        <button id="frame-tool">Frame</button>
-        <button id="download-frame">SaveFrame</button>
+        <div class="spacer"></div>
 
-
+        <button id="frame-tool" title="Frame Tool"><i class="fas fa-border-style"></i></button>
     </div>
-
     <div class="toolbar" id="options-toolbar">
         <label for="brush-width-label">Size</label>
         <input type="range" id="brush-width" min="1" max="250" value="7">
@@ -47,11 +38,37 @@
         <input type="range" id="brush-opacity" min="0" max="1" step="0.1" value="0.8">
         <label id="opacity-size-label"></label>
     </div>
+    <div class="toolbar" id="select-options-toolbar">
+        <button id="copy-button" title="Copy" class="copy-btn"><i class="fas fa-copy"></i></button>
+        <button id="bring-forward-button" title="Bring Forward"><i class="fas fa-arrow-up"></i></button>
+        <button id="send-backward-button" title="Send Backward"><i class="fas fa-arrow-down"></i></button>
+        <button id="bring-to-front-button" title="Bring to Front"><i class="fas fa-angle-double-up"></i></button>
+        <button id="send-to-back-button" title="Send to Back"><i class="fas fa-angle-double-down"></i></button>
+    </div>
+    <div class="panel" id="doc-panel">
+        <button id="undo-button" title="Undo"><i class="fas fa-undo"></i></button>
+        <button id="redo-button" title="Redo"><i class="fas fa-redo"></i></button>
+        <button id="clear-drawing" title="Clear Drawing"><i class="fas fa-trash-alt"></i></button>
+        <div class="spacer"></div>
+
+        <input type="color" id="background-color-picker" title="Background Color" value="#ffffff">
+        <div class="spacer"></div>
+
+        <button id="save-image" title="Save Image"><i class="fas fa-download"></i></button>
+        <button id="add-image" title="Add Image"><i class="fas fa-image"></i></button>
+        <input type="file" id="image-upload" accept="image/*" style="display:none;">
+        <button id="flatten-canvas" title="Flatten Canvas"><i class="fas fa-compress-arrows-alt"></i></button>
+        <button id="download-frame">Save Frame</button>
+
+    </div>
 
     <div id="canvas-container">
         <canvas id="canvas"></canvas>
         <div class="overlay"></div>
     </div>
+
+
+
 
     <!-- Fabricjs cdn-->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/4.3.1/fabric.min.js"></script>

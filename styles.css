@@ -58,22 +58,58 @@ canvas {
     transform: translateX(-50%);
 }
 
+#select-options-toolbar {
+    position: absolute;
+    background-color: #333;
+    padding: 2px 4px;
+    border-radius: 8px;
+    margin: 4px 0 8px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 12;
+    left: 50%;
+    transform: translateX(-50%);
+    display: none;
+}
+
+/* Panel Styles */
+#doc-panel {
+    position: absolute;
+    background-color: #333;
+    padding: 2px 4px;
+    border-radius: 8px;
+    margin: 4px 0 8px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 11;
+    top: 2px;
+    left: 50%;
+    transform: translateX(-50%);
+    /*shadow*/
+    box-shadow: 0 0 10px 0 rgba(0, 0, 0, 0.2);
+}
+
+.spacer {
+    width: 10px;
+}
+
 /* Button Styles */
 button {
     background-color: #444;
     color: #999;
     border: 1px solid #555;
     padding: 6px 8px;
-    /* Increased padding for larger button size */
     border-radius: 5px;
     margin: 4px;
-    /* Increased margin for spacing */
     font-family: 'Inter', sans-serif;
     cursor: pointer;
     font-size: 12px;
-    /* Slightly larger font size for readability */
     text-transform: uppercase;
     font-weight: semi-bold;
+    /*shrink to fit*/
+    width: fit-content;
 }
 
 button:hover {
@@ -148,6 +184,16 @@ label {
 
 .drag-handle:active {
     cursor: grabbing;
+}
+
+.drag-handle i {
+    color: #242424;
+    /* Darker color for the icon */
+}
+
+.drag-handle .fa-grip-vertical {
+    color: #242424;
+    /* Darker color for the grip icon */
 }
 
 /* Overlay and Transparency */

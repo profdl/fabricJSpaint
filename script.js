@@ -33,7 +33,7 @@ const canvas = new fabric.Canvas("canvas", {
   preserveObjectStacking: true,
 });
 
-// Utility function to update active tool UI
+// Utility function to update active tool UI and show/hide toolbars
 function setActiveTool(button) {
   const activeToolClass = "active-tool";
   const activeButton = document.querySelector("." + activeToolClass);
@@ -41,6 +41,20 @@ function setActiveTool(button) {
     activeButton.classList.remove(activeToolClass);
   }
   button.classList.add(activeToolClass);
+
+  // Show/hide toolbars based on the active tool
+  if (button === selectModeButton) {
+    optionsToolbar.style.display = "none";
+    selectOptionsToolbar.style.display = "flex";
+  } else if (button === drawModeButton || button === lineModeButton) {
+    optionsToolbar.style.display = "flex";
+    selectOptionsToolbar.style.display = "none";
+  } else {
+    optionsToolbar.style.display = "none";
+    selectOptionsToolbar.style.display = "none";
+  }
+
+  updateToolbarPositions();
 }
 
 // Convert hex color to RGBA
@@ -728,6 +742,8 @@ window.addEventListener("load", function () {
 // Drag functionality for toolbars
 const toolbar = document.getElementById("toolbar");
 const optionsToolbar = document.getElementById("options-toolbar");
+const selectOptionsToolbar = document.getElementById("select-options-toolbar");
+const docPanel = document.getElementById("doc-panel");
 
 let isDragging = false;
 let startX, startY, offsetX, offsetY;
@@ -750,14 +766,8 @@ document.addEventListener("mousemove", function (e) {
     toolbar.style.top = `${newTop}px`;
     toolbar.style.bottom = "auto";
     toolbar.style.transform = "none";
-    const toolbarRect = toolbar.getBoundingClientRect();
-    const optionsToolbarRect = optionsToolbar.getBoundingClientRect();
-    optionsToolbar.style.left = `${
-      newLeft + (toolbarRect.width - optionsToolbarRect.width) / 2
-    }px`;
-    optionsToolbar.style.top = `${newTop - optionsToolbarRect.height - 10}px`;
-    optionsToolbar.style.bottom = "auto";
-    optionsToolbar.style.transform = "none";
+
+    updateToolbarPositions();
   }
 });
 
@@ -773,11 +783,27 @@ function resetToolbarPositions() {
   toolbar.style.top = "auto";
   toolbar.style.bottom = "20px";
   toolbar.style.transform = "translateX(-50%)";
-  optionsToolbar.style.left = "50%";
-  toolbar.style.top = "auto";
-  optionsToolbar.style.bottom = "58px";
-  optionsToolbar.style.transform = "translateX(-50%)";
+
+  updateToolbarPositions();
 }
+
+function updateToolbarPositions() {
+  const toolbarRect = toolbar.getBoundingClientRect();
+  const toolbarTop = toolbarRect.top;
+
+  [optionsToolbar, selectOptionsToolbar].forEach((tb) => {
+    tb.style.position = "absolute";
+    tb.style.left = `${
+      toolbarRect.left + (toolbarRect.width - tb.offsetWidth) / 2
+    }px`;
+    tb.style.top = `${toolbarTop - tb.offsetHeight - 10}px`;
+    tb.style.bottom = "auto";
+    tb.style.transform = "none";
+  });
+}
+
+window.addEventListener("resize", updateToolbarPositions);
+window.addEventListener("scroll", updateToolbarPositions);
 
 toolbar.addEventListener("dblclick", resetToolbarPositions);
 resetToolbarPositions();
