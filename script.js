@@ -23,7 +23,6 @@ let lineInProgress = null;
 let lines = [];
 
 // Initialize Fabric.js canvas
-// Initialize Fabric.js canvas
 const canvas = new fabric.Canvas("canvas", {
   isDrawingMode: true,
   width: 912,
@@ -461,17 +460,24 @@ copyButton.addEventListener("click", function () {
   Paste();
 });
 
+// Event listener to clear the canvas and reset zoom
 document.getElementById("clear-drawing").addEventListener("click", function () {
   // Clear the canvas and reset its properties
   canvas.clear();
   resizeCanvas(); // Call this after initializing the canvas
-  canvas.setZoom(1); // Ensure zoom is reset
+  canvas.setZoom(1); // Reset zoom level
   initializeFrame();
   canvas.backgroundColor = "#202020";
-  canvas.setZoom(1);
 
   // Reinitialize the frame
   initializeFrame();
+});
+
+// Reset zoom and initialize frame on page load
+window.addEventListener("load", function () {
+  canvas.setZoom(1); // Reset zoom level on load
+  resizeCanvas(); // Adjust canvas size to fit window
+  initializeFrame(); // Initialize the frame at default zoom level
 });
 
 //clear-drawing simulate
@@ -480,6 +486,11 @@ resizeCanvas(); // Call this after initializing the canvas
 
 // Function to initialize the frame
 function initializeFrame() {
+  // Check if a frame already exists
+  if (activeFrame) {
+    canvas.remove(activeFrame); // Remove the existing frame
+  }
+
   const canvasWidth = canvas.getWidth();
   const canvasHeight = canvas.getHeight();
   const size = Math.min(canvasWidth, canvasHeight) * 0.6; // Adjust the size as needed
@@ -622,6 +633,17 @@ function changeFrameColor(color) {
 }
 
 // Zoom and pan functionality
+// Debounce function to limit how often the frame and mask are updated
+function debounce(func, wait) {
+  let timeout;
+  return function (...args) {
+    const context = this;
+    clearTimeout(timeout);
+    timeout = setTimeout(() => func.apply(context, args), wait);
+  };
+}
+
+// Event handler for zooming
 canvas.on("mouse:wheel", function (opt) {
   const delta = opt.e.deltaY;
   let zoom = canvas.getZoom();
@@ -631,15 +653,87 @@ canvas.on("mouse:wheel", function (opt) {
   if (zoom < 0.01) zoom = 0.01;
 
   const pointer = canvas.getPointer(opt.e);
-  const zoomPointX = pointer.x;
-  const zoomPointY = pointer.y;
-
-  // Calculate the new viewport position
-  canvas.zoomToPoint({ x: zoomPointX, y: zoomPointY }, zoom);
+  canvas.zoomToPoint({ x: pointer.x, y: pointer.y }, zoom);
 
   opt.e.preventDefault();
   opt.e.stopPropagation();
+
+  // Use the debounced function to update the frame and mask
+  debouncedUpdateFrameAndMask();
 });
+
+// Debounced version of the frame and mask update
+const debouncedUpdateFrameAndMask = debounce(() => {
+  updateFrameAndMask();
+}, 100); // Adjust the wait time (in milliseconds) to balance responsiveness and performance
+
+// Function to update the frame and mask after zoom
+function updateFrameAndMask() {
+  if (activeFrame) {
+    // Keep the frame centered relative to the canvas
+    activeFrame.set({
+      left: canvas.getWidth() / 2,
+      top: canvas.getHeight() / 2,
+    });
+    activeFrame.setCoords();
+
+    // Ensure the frame remains at the back
+    canvas.sendToBack(activeFrame);
+  }
+
+  // Update clipping paths to match the new frame position
+  function updateClippingForObjects() {
+    if (!activeFrame) return; // If no frame is active, exit the function
+
+    const frameBounds = activeFrame.getBoundingRect();
+    const zoom = canvas.getZoom();
+    const viewportTransform = canvas.viewportTransform;
+
+    canvas.getObjects().forEach((obj) => {
+      if (obj !== activeFrame) {
+        const objBounds = obj.getBoundingRect();
+
+        // Adjust frame bounds based on the current zoom and viewport transformation
+        const adjustedFrameBounds = {
+          left: (frameBounds.left - viewportTransform[4]) / zoom,
+          top: (frameBounds.top - viewportTransform[5]) / zoom,
+          width: frameBounds.width / zoom,
+          height: frameBounds.height / zoom,
+        };
+
+        // Check if the object is completely outside the adjusted frame bounds
+        if (
+          objBounds.left >
+            adjustedFrameBounds.left + adjustedFrameBounds.width ||
+          objBounds.left + objBounds.width < adjustedFrameBounds.left ||
+          objBounds.top >
+            adjustedFrameBounds.top + adjustedFrameBounds.height ||
+          objBounds.top + objBounds.height < adjustedFrameBounds.top
+        ) {
+          obj.clipPath = null; // Remove clipping if completely outside the frame
+        }
+        // Apply clipping if the object is at least partially within the frame
+        else {
+          obj.clipPath = new fabric.Rect({
+            left: adjustedFrameBounds.left,
+            top: adjustedFrameBounds.top,
+            width: adjustedFrameBounds.width,
+            height: adjustedFrameBounds.height,
+            originX: "left",
+            originY: "top",
+            absolutePositioned: true,
+          });
+        }
+
+        // Mark the object as dirty to force redraw
+        obj.dirty = true;
+        obj.setCoords(); // Recalculate the object's coordinates
+      }
+    });
+
+    canvas.renderAll();
+  }
+}
 
 //reset zoom
 canvas.setZoom(1);
@@ -813,21 +907,6 @@ sendToBackButton.addEventListener("click", function () {
   }
 });
 
-// Auto-save functionality
-// window.addEventListener("beforeunload", function () {
-//   const canvasState = JSON.stringify(canvas.toJSON());
-//   localStorage.setItem("canvasState", canvasState);
-// });
-
-// window.addEventListener("load", function () {
-//   const savedState = localStorage.getItem("canvasState");
-//   if (savedState) {
-//     canvas.loadFromJSON(savedState, function () {
-//       canvas.renderAll();
-//     });
-//   }
-// });
-
 // Drag functionality for toolbars
 const toolbar = document.getElementById("toolbar");
 const optionsToolbar = document.getElementById("options-toolbar");
@@ -992,32 +1071,45 @@ canvas.on("object:added", function (e) {
   }
 });
 
-// Function to create and update the clipping path
+// Function to create and update the clipping path. Debounced function to limit how often clipping paths are updated
+const debouncedUpdateClippingForObjects = debounce(() => {
+  updateClippingForObjects();
+}, 100); // Adjust the debounce time (in milliseconds) to balance responsiveness and performance
+
 function updateClippingForObjects() {
   if (!activeFrame) return; // If no frame is active, exit the function
 
   const frameBounds = activeFrame.getBoundingRect();
+  const zoom = canvas.getZoom();
+  const viewportTransform = canvas.viewportTransform;
+
+  // Adjust frame bounds based on the current zoom and viewport transformation
+  const adjustedFrameBounds = {
+    left: (frameBounds.left - viewportTransform[4]) / zoom,
+    top: (frameBounds.top - viewportTransform[5]) / zoom,
+    width: frameBounds.width / zoom,
+    height: frameBounds.height / zoom,
+  };
 
   canvas.getObjects().forEach((obj) => {
     if (obj !== activeFrame) {
       const objBounds = obj.getBoundingRect();
 
-      // Check if the object is completely outside the frame bounds
+      // Check if the object is completely outside the adjusted frame bounds
       if (
-        objBounds.left > frameBounds.left + frameBounds.width ||
-        objBounds.left + objBounds.width < frameBounds.left ||
-        objBounds.top > frameBounds.top + frameBounds.height ||
-        objBounds.top + objBounds.height < frameBounds.top
+        objBounds.left > adjustedFrameBounds.left + adjustedFrameBounds.width ||
+        objBounds.left + objBounds.width < adjustedFrameBounds.left ||
+        objBounds.top > adjustedFrameBounds.top + adjustedFrameBounds.height ||
+        objBounds.top + objBounds.height < adjustedFrameBounds.top
       ) {
         obj.clipPath = null; // Remove clipping if completely outside the frame
-      }
-      // Apply clipping if the object is at least partially within the frame
-      else {
+      } else {
+        // Apply clipping if the object is at least partially within the frame
         obj.clipPath = new fabric.Rect({
-          left: frameBounds.left,
-          top: frameBounds.top,
-          width: frameBounds.width,
-          height: frameBounds.height,
+          left: adjustedFrameBounds.left,
+          top: adjustedFrameBounds.top,
+          width: adjustedFrameBounds.width,
+          height: adjustedFrameBounds.height,
           originX: "left",
           originY: "top",
           absolutePositioned: true,
@@ -1032,6 +1124,67 @@ function updateClippingForObjects() {
 
   canvas.renderAll();
 }
+
+// Debounce utility function
+function debounce(func, wait) {
+  let timeout;
+  return function (...args) {
+    const context = this;
+    clearTimeout(timeout);
+    timeout = setTimeout(() => func.apply(context, args), wait);
+  };
+}
+
+// Ensure the clipping paths are updated when zooming, panning, or resizing
+canvas.on("mouse:wheel", function (opt) {
+  const delta = opt.e.deltaY;
+  let zoom = canvas.getZoom();
+  zoom *= 0.999 ** delta;
+
+  if (zoom > 20) zoom = 20;
+  if (zoom < 0.01) zoom = 0.01;
+
+  const pointer = canvas.getPointer(opt.e);
+  canvas.zoomToPoint({ x: pointer.x, y: pointer.y }, zoom);
+
+  opt.e.preventDefault();
+  opt.e.stopPropagation();
+
+  // Debounce the update to avoid performance issues
+  debouncedUpdateClippingForObjects();
+});
+
+canvas.on("mouse:down", function (opt) {
+  var evt = opt.e;
+  if (evt.altKey === true) {
+    this.isDragging = true;
+    this.selection = false;
+    this.lastPosX = evt.clientX;
+    this.lastPosY = evt.clientY;
+  }
+});
+
+canvas.on("mouse:move", function (opt) {
+  if (this.isDragging) {
+    var e = opt.e;
+    var vpt = this.viewportTransform;
+    vpt[4] += e.clientX - this.lastPosX;
+    vpt[5] += e.clientY - this.lastPosY;
+    this.requestRenderAll();
+    this.lastPosX = e.clientX;
+    this.lastPosY = e.clientY;
+    // Debounce the update to avoid performance issues during dragging
+    debouncedUpdateClippingForObjects();
+  }
+});
+
+canvas.on("mouse:up", function () {
+  this.setViewportTransform(this.viewportTransform);
+  this.isDragging = false;
+  this.selection = true;
+  // Debounce the update to avoid performance issues after dragging
+  debouncedUpdateClippingForObjects();
+});
 
 // Apply clipping to objects that intersect with the frame when moved or modified
 canvas.on("object:moving", function () {
@@ -1112,3 +1265,50 @@ canvas.on("object:removed", function (e) {
     clearClippingPaths();
   }
 });
+
+// Initialize frame selection handler
+const frameSizeSelector = document.getElementById("frame-size-selector");
+
+// Set default value to 1344 x 768
+frameSizeSelector.value = "1344,768";
+
+frameSizeSelector.addEventListener("change", function () {
+  const [width, height] = this.value.split(",").map(Number);
+  resizeFrame(width, height);
+});
+
+function resizeFrame(width, height) {
+  if (activeFrame) {
+    // Remove the existing frame
+    canvas.remove(activeFrame);
+  }
+
+  const canvasWidth = canvas.getWidth();
+  const canvasHeight = canvas.getHeight();
+
+  // Create a new frame with the selected size
+  activeFrame = new fabric.Rect({
+    left: canvasWidth / 2,
+    top: canvasHeight / 2,
+    width: width,
+    height: height,
+    fill: "#f0f0f0",
+    stroke: "black",
+    strokeWidth: 1,
+    strokeDashArray: [5, 5],
+    originX: "center",
+    originY: "center",
+    selectable: false, // Make the frame not selectable
+    hasControls: false,
+    hasBorders: false,
+  });
+
+  // Add the frame to the canvas and recalculate offsets
+  canvas.add(activeFrame);
+  canvas.sendToBack(activeFrame);
+  canvas.calcOffset();
+  canvas.renderAll();
+}
+
+// Call resizeFrame initially to set the default frame size to 1344 x 768
+resizeFrame(1344, 768);

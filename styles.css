@@ -216,3 +216,25 @@ label {
         /* Adjust for smaller screens */
     }
 }
+
+
+/* Dropdown Styles */
+#frame-size-selector {
+    background-color: #444;
+    color: #999;
+    border: 1px solid #555;
+    padding: 4px 6px;
+    border-radius: 5px;
+    margin: 0 4px;
+    font-family: 'Inter', sans-serif;
+    font-size: 12px;
+    cursor: pointer;
+    appearance: none;
+    /* Removes default browser styles */
+}
+
+#frame-size-selector:hover {
+    background-color: #555;
+    color: #fff;
+    border-color: #099AF2;
+}

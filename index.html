@@ -10,6 +10,18 @@
 
 <body>
     <div class="panel" id="doc-panel">
+        <select id="frame-size-selector">
+            <option value="1024,1024">1024 × 1024 (1:1)</option>
+            <option value="1152,896">1152 × 896 (4:3)</option>
+            <option value="896,1152">896 × 1152 (3:4)</option>
+            <option value="1216,832">1216 × 832 (3:2)</option>
+            <option value="832,1216">832 × 1216 (2:3)</option>
+            <option value="1344,768">1344 × 768 (16:9)</option>
+            <option value="768,1344">768 × 1344 (9:16)</option>
+            <option value="1536,640">1536 × 640 (12:5)</option>
+            <option value="640,1536">640 × 1536 (5:12)</option>
+        </select>
+
         <button id="undo-button" title="Undo"><i class="fas fa-undo"></i></button>
         <button id="redo-button" title="Redo"><i class="fas fa-redo"></i></button>
         <div class="spacer"></div>
